@@ -38,6 +38,7 @@ export const generateDepthMap = async (imageFile) => {
   try {
     const res = await api.post('/generate-depth/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 300000, // 5 minutes timeout for model download/inference
       onUploadProgress: (p) => console.log(`⏳ Upload: ${Math.round((p.loaded * 100) / p.total)}%`),
     });
     const data = res.data;
@@ -63,12 +64,14 @@ export const getInventoryItem = async (id) => {
 };
 
 export const createInventoryItem = async (data) => {
-  const res = await api.post('/inventory/', data);
+  const headers = data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {};
+  const res = await api.post('/inventory/', data, { headers });
   return res.data;
 };
 
 export const updateInventoryItem = async (id, data) => {
-  const res = await api.put(`/inventory/${id}/`, data);
+  const headers = data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {};
+  const res = await api.put(`/inventory/${id}/`, data, { headers });
   return res.data;
 };
 
@@ -111,26 +114,32 @@ export const submitDesign = async (id) => {
   return res.data;
 };
 
-// ─── Placed Item Rotation (PATCH) ────────────────────────────────
-// Sends a PATCH request to update the rotation.y value for a placed item.
-// The backend stores rotation_y as a FloatField (radians).
-// Endpoint: PATCH /api/designs/items/<itemId>/
-export const patchItemRotation = async (productId, itemId, rotationData) => {
+// ─── Placed Item Transform (PATCH) ──────────────────────────────
+// PATCH /api/designs/:designId/items/:itemId/
+// Persists position, rotation, or scale changes for a single placed item.
+export const patchItemTransform = async (designId, itemId, transformData) => {
+  if (!designId) {
+    console.warn('patchItemTransform: no designId — changes are local only until design is saved.');
+    return { status: 'local_only' };
+  }
   try {
-    const res = await api.patch(`/designs/items/${itemId}/`, {
-      rotation_y: rotationData.rotation_y,  // Float in radians
-    });
+    const res = await api.patch(`/designs/${designId}/items/${itemId}/`, transformData);
     return res.data;
   } catch (err) {
-    // Graceful fallback — if endpoint doesn't exist yet, log and continue
     if (err.response?.status === 404) {
-      console.warn('PATCH endpoint not available yet — rotation saved locally only');
-      return { status: 'local_only' };
+      console.warn('Item not found in design — may have been removed.');
+      return { status: 'not_found' };
     }
     throw new Error(
-      err.response?.data?.error || err.message || 'Failed to save rotation'
+      err.response?.data?.error || err.message || 'Failed to save transform'
     );
   }
+};
+
+// Legacy alias kept for backwards compatibility
+export const patchItemRotation = (productId, itemId, rotationData) => {
+  console.warn('patchItemRotation is deprecated. Use patchItemTransform(designId, itemId, data) instead.');
+  return Promise.resolve({ status: 'local_only' });
 };
 // ─── Checkout & Inventory Sync ────────────────────────────────────
 export const submitOrder = async (orderData) => {
@@ -155,6 +164,23 @@ export const createCheckoutSession = async (orderId) => {
       throw new Error(err.response.data.error);
     }
     throw new Error(err.message || 'Failed to create checkout session');
+  }
+};
+
+// ─── Forgot / Reset Password ──────────────────────────────────────
+
+/**
+ * resetPassword — Verifies username+email then sets a new password.
+ * POST /api/reset-password/  { username, email, new_password }
+ */
+export const resetPassword = async ({ username, email, new_password }) => {
+  try {
+    const res = await api.post('/reset-password/', { username, email, new_password });
+    return res.data; // { message: '...' }
+  } catch (err) {
+    throw new Error(
+      err.response?.data?.error || err.message || 'Password reset failed.'
+    );
   }
 };
 

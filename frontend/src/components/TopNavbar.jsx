@@ -22,7 +22,7 @@ const TopNavbar = () => {
         <nav className="w-full h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between font-sans z-50 sticky top-0 shadow-sm">
             {/* Left: Brand */}
             <div className="flex items-center gap-2">
-                <span className="text-emerald-500 text-2xl">🌻</span>
+                <span className="text-emerald-500 text-2xl"></span>
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white hidden sm:block">
                     Garden Studio
                 </h2>

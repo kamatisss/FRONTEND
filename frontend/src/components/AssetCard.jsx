@@ -25,16 +25,16 @@ export default function AssetCard({ product, isSelected, onClick }) {
     <div
       onClick={() => onClick(product)}
       className={`
-        group relative flex flex-col rounded-xl overflow-hidden cursor-pointer
-        transition-all duration-300 select-none bg-white dark:bg-slate-800
-        border border-slate-200 dark:border-slate-700
+        group relative flex flex-col rounded-2xl overflow-hidden cursor-pointer
+        transition-all duration-300 select-none bg-white
+        border border-gray-200
         ${isSelected
-          ? 'ring-2 ring-emerald-500 shadow-md'
-          : 'hover:shadow-md hover:border-emerald-300 hover:-translate-y-1'}
+          ? 'ring-2 ring-emerald-500 shadow-lg'
+          : 'hover:shadow-lg hover:border-emerald-200'}
       `}
     >
       {/* ── Product Image ── */}
-      <div className="relative w-full aspect-square overflow-hidden bg-slate-50 dark:bg-slate-700">
+      <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-50 border-b border-gray-50">
         {product.thumbnail ? (
           <img
             src={product.thumbnail}
@@ -42,17 +42,11 @@ export default function AssetCard({ product, isSelected, onClick }) {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          /* Placeholder when no thumbnail uploaded yet */
-          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500">
-            <CatIcon size={36} strokeWidth={1.5} />
-            <span className="text-xs">No image</span>
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-300">
+            <CatIcon size={32} strokeWidth={1.5} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Preview</span>
           </div>
         )}
-
-        {/* Category badge */}
-        <span className={`absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${catColor}`}>
-          {product.category}
-        </span>
 
         {/* Selected checkmark */}
         {isSelected && (
@@ -65,54 +59,20 @@ export default function AssetCard({ product, isSelected, onClick }) {
       </div>
 
       {/* ── Product Info ── */}
-      <div className="flex flex-col flex-1 p-3">
-        <div className="flex flex-col flex-1 min-h-[40px] justify-start mb-1">
-          <p
-            className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate"
-            title={product.name}
-          >
-            {product.name}
-          </p>
-        </div>
-
-        {/* Stock indicator */}
+      <div className="flex flex-col p-3 pb-4">
+        <p className="text-sm font-bold text-gray-800 truncate mb-1" title={product.name}>
+          {product.name}
+        </p>
+        
         {product.stock_quantity !== undefined && (
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">
-            {product.stock_quantity > 0
-              ? `${product.stock_quantity} left in stock`
-              : 'Out of stock'}
+          <p className="text-[11px] font-bold text-gray-400 truncate mb-2 uppercase tracking-tight">
+            {product.stock_quantity > 0 ? `${product.stock_quantity} available` : 'Restocking soon'}
           </p>
         )}
-
-        <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100 dark:border-slate-700/50">
-          {/* Price */}
-          <p className="font-bold text-emerald-600 dark:text-emerald-400 truncate pr-1">
-            ₱{price}
-          </p>
-
-          {/* Call to Action Button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onClick(product); }}
-            className={`
-              shrink-0 w-7 h-7 flex items-center justify-center rounded-full transition-colors shadow-sm
-              ${isSelected
-                ? 'bg-emerald-500 text-white'
-                : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white dark:bg-slate-700 dark:text-emerald-400'}
-            `}
-            title={isSelected ? 'Added to Design' : 'Add to Design'}
-          >
-            {isSelected ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            )}
-          </button>
-        </div>
+        
+        <p className="text-sm font-black text-emerald-600">
+          ₱{price}
+        </p>
       </div>
     </div>
   );

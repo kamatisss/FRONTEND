@@ -52,10 +52,6 @@ function App() {
                 element={
                   <RoleProtectedRoute allowedRoles={['user', 'admin', 'staff']}>
                     <DashboardLayout>
-                      <header className="app-header" style={{ margin: '20px' }}>
-                        <h1>🌻 Garden Design Studio</h1>
-                        <p className="subtitle">Design your dream tropical garden in 3D</p>
-                      </header>
                       <GardenDesigner />
                     </DashboardLayout>
                   </RoleProtectedRoute>

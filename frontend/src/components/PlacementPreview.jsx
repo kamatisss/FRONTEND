@@ -78,7 +78,9 @@ export default function PlacementPreview({ terrainRef }) {
         Math.abs(point.z) <= TERRAIN_HALF;
 
       // Check if surface is roughly upward-facing
-      const validSurface = !face || face.normal.y > 0.3;
+      // R3F plane geometry has a local normal of [0, 0, 1]. Since the mesh is rotated -90deg on X,
+      // the world "up" corresponds to the local Z axis.
+      const validSurface = !face || face.normal.z > 0.3;
       const valid = withinBounds && validSurface;
 
       isValid.current = valid;

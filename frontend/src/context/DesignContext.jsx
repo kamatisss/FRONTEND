@@ -55,6 +55,9 @@ function reducer(state, action) {
     // ── Placement Workflow Actions ────────────────────────────
     case 'START_PLACING': {
       const product = action.payload;
+      // Give a random initial position spread across the terrain so items don't stack
+      const randomX = (Math.random() - 0.5) * 8;  // -4 to +4
+      const randomZ = (Math.random() - 0.5) * 8;  // -4 to +4
       return {
         ...state,
         placementMode: 'placing',
@@ -66,12 +69,10 @@ function reducer(state, action) {
           id: `preview_${Date.now()}`,
           productId: product.id,
           name: product.name,
-          // ✅ Use the new Django FileField URLs — these are absolute URLs like
-          //    http://localhost:8000/media/models/tree.glb
           model_file: product.model_file || null,
           thumbnail:  product.thumbnail  || null,
           unit_price: Number(product.unit_price),
-          position: { x: 0, y: 0, z: 0 },
+          position: { x: randomX, y: 0, z: randomZ },
           rotation: { x: 0, y: Math.random() * Math.PI * 2, z: 0 },
           scale: { x: 0.8, y: 0.8, z: 0.8 },
         },

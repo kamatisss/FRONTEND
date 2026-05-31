@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDesign } from '../context/DesignContext';
 import { patchItemRotation } from '../services/api';
 import {
@@ -6,38 +6,124 @@ import {
 } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════
-   OBJECT TRANSFORM PANEL
-   
-   Shows when an object is selected. Provides:
-   - Y-axis rotation slider (degrees 0–360 → radians for Three.js)
-   - Quick rotation buttons (±15°, ±45°, ±90°)
-   - Object info (name, position, scale)
-   - Save rotation to Django backend via PATCH
+   OBJECT TRANSFORM PANEL — Inline styles for light theme
    ═══════════════════════════════════════════════════════════════ */
 
-// ── Conversion helpers ────────────────────────────────────────
 const radToDeg = (rad) => ((rad * 180) / Math.PI) % 360;
 const degToRad = (deg) => (deg * Math.PI) / 180;
-
-// Normalize to 0–360 range
 const normalizeDeg = (deg) => ((deg % 360) + 360) % 360;
+
+const O = {
+  panel: {
+    width: 300, background: '#fff', borderRadius: 16,
+    boxShadow: '0 4px 24px rgba(0,0,0,0.1)', border: '1px solid #E5E7EB',
+    overflow: 'hidden',
+  },
+  header: {
+    padding: '14px 20px', borderBottom: '1px solid #E5E7EB',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    background: '#FAFAFA',
+  },
+  headerTitle: {
+    fontSize: '0.85rem', fontWeight: 700, color: '#1f2937',
+    display: 'flex', alignItems: 'center', gap: 8, margin: 0,
+  },
+  closeBtn: {
+    width: 28, height: 28, borderRadius: 6, border: 'none',
+    background: 'transparent', cursor: 'pointer', color: '#9CA3AF',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  body: { padding: 20 },
+  nameRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  itemName: {
+    fontSize: '0.85rem', fontWeight: 700, color: '#1f2937',
+    maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
+  autoBadge: {
+    padding: '2px 8px', background: '#F0FDF4', color: '#059669',
+    fontSize: 10, fontWeight: 700, borderRadius: 4, textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+  },
+  /* Section labels — HIGHER CONTRAST */
+  sectionLabel: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    fontSize: '0.7rem', fontWeight: 700, color: '#4B5563',
+    textTransform: 'uppercase', letterSpacing: '0.08em',
+  },
+  degValue: {
+    color: '#059669', fontFamily: 'monospace', fontWeight: 700, fontSize: '0.85rem',
+  },
+  sliderInput: {
+    width: '100%', height: 6, borderRadius: 4, appearance: 'none',
+    cursor: 'pointer', background: '#E5E7EB', accentColor: '#10b981',
+    outline: 'none', marginTop: 8,
+  },
+  sliderLabels: {
+    display: 'flex', justifyContent: 'space-between',
+    fontSize: 10, color: '#9CA3AF', fontWeight: 700, padding: '4px 2px 0',
+  },
+  quickGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginTop: 12,
+  },
+  quickBtn: {
+    padding: '6px 0', background: '#F9FAFB', border: '1px solid #E5E7EB',
+    borderRadius: 8, fontSize: 11, fontWeight: 700, color: '#4B5563',
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+    transition: 'all 0.15s',
+  },
+  /* Details grid — HIGHER CONTRAST labels */
+  detailGrid: {
+    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 20,
+  },
+  detailLabel: {
+    fontSize: 10, fontWeight: 700, color: '#4B5563',
+    textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8,
+  },
+  detailBox: {
+    background: '#F9FAFB', borderRadius: 10, padding: 12,
+  },
+  coordRow: {
+    display: 'flex', justifyContent: 'space-between',
+    fontSize: 11, fontWeight: 700, marginBottom: 4,
+  },
+  coordLabel: { color: '#6B7280' },
+  coordValue: { color: '#374151', fontFamily: 'monospace' },
+  scaleBox: {
+    background: '#F9FAFB', borderRadius: 10, padding: 12,
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    minHeight: 76,
+  },
+  scaleValue: { fontSize: '1.25rem', fontWeight: 900, color: '#1f2937', fontFamily: 'monospace' },
+  scaleLabel: { fontSize: 9, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 4 },
+  /* Save button — VISIBLE BORDER & PROPER STYLING */
+  saveBtn: (status) => ({
+    width: '100%', padding: '12px 0', borderRadius: 10,
+    fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    marginTop: 20, transition: 'all 0.15s',
+    background: status === 'saved' ? '#F0FDF4' : '#fff',
+    border: status === 'saved' ? '1px solid #BBF7D0' : '1px solid #D1D5DB',
+    color: status === 'saved' ? '#059669' : '#374151',
+  }),
+  errorMsg: { fontSize: 10, color: '#EF4444', fontWeight: 700, textAlign: 'center', marginTop: 8 },
+};
 
 export default function ObjectTransformPanel() {
   const { state, dispatch } = useDesign();
   const { placedItems, selectedItemId, placementMode } = state;
   const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(''); // '' | 'saved' | 'error'
+  const [saveStatus, setSaveStatus] = useState('');
   const saveTimeoutRef = useRef(null);
 
-  // Find the selected item
   const selectedItem = placedItems.find(i => i.id === selectedItemId);
 
-  // Cleanup timeout on unmount (Must be called before any early returns to obey Rules of Hooks)
   useEffect(() => {
     return () => clearTimeout(saveTimeoutRef.current);
   }, []);
 
-  // Don't render if nothing selected or in placement mode
   if (!selectedItem || placementMode !== 'idle') return null;
 
   let rawRotY = selectedItem.rotation?.y;
@@ -45,11 +131,9 @@ export default function ObjectTransformPanel() {
   const currentRadians = Number.isFinite(rawRotY) ? rawRotY : 0;
   const currentDegrees = normalizeDeg(radToDeg(currentRadians));
 
-  // ── Update rotation (Y-axis only) ──────────────────────────
   const updateRotation = (newDegrees) => {
     const normalized = normalizeDeg(newDegrees);
     const newRadians = degToRad(normalized);
-
     dispatch({
       type: 'UPDATE_ITEM',
       payload: {
@@ -63,30 +147,19 @@ export default function ObjectTransformPanel() {
         },
       },
     });
-
-    // Clear any pending save status
     setSaveStatus('');
   };
 
-  // ── Slider handler ─────────────────────────────────────────
-  const handleSliderChange = (e) => {
-    updateRotation(Number(e.target.value));
-  };
+  const handleSliderChange = (e) => updateRotation(Number(e.target.value));
+  const rotateBy = (deltaDeg) => updateRotation(currentDegrees + deltaDeg);
 
-  // ── Quick rotate buttons ───────────────────────────────────
-  const rotateBy = (deltaDeg) => {
-    updateRotation(currentDegrees + deltaDeg);
-  };
-
-  // ── Persist to Django backend ──────────────────────────────
   const handleSaveRotation = async () => {
     if (!selectedItem.productId) {
-      setSaveStatus('saved'); // Local-only item, just mark as saved
+      setSaveStatus('saved');
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => setSaveStatus(''), 2500);
       return;
     }
-
     setSaving(true);
     setSaveStatus('');
     try {
@@ -107,152 +180,99 @@ export default function ObjectTransformPanel() {
   const pos = selectedItem.position;
   const scale = selectedItem.scale?.x || selectedItem.scale || 1;
 
+  const quickBtns = [
+    { label: '-90°', delta: -90, Icon: RotateCcw },
+    { label: '-15°', delta: -15 },
+    { label: '-5°', delta: -5 },
+    { label: '+5°', delta: 5 },
+    { label: '+15°', delta: 15 },
+    { label: '+90°', delta: 90, Icon: RotateCw },
+  ];
+
   return (
-    <div className="transform-panel" id="transform-panel">
-      <h3>
-        <Compass size={15} style={{ marginRight: 6, verticalAlign: 'middle', color: '#8b5cf6' }} />
-        Transform
-      </h3>
-
-      {/* Object info */}
-      <div className="transform-object-info">
-        <span className="transform-object-name">{selectedItem.name}</span>
-        {selectedItem.autoDetected && (
-          <span className="transform-auto-badge">Auto-detected</span>
-        )}
-      </div>
-
-      {/* ── Y-Axis Rotation ──────────────────────────────────── */}
-      <div className="transform-section">
-        <div className="transform-section-header">
-          <RotateCw size={13} style={{ color: '#8b5cf6' }} />
-          <span>Y-Axis Rotation</span>
-          <span className="transform-value">{Math.round(currentDegrees)}°</span>
-        </div>
-
-        {/* Rotation slider */}
-        <div className="rotation-slider-wrap">
-          <input
-            type="range"
-            className="rotation-slider"
-            min="0"
-            max="360"
-            step="1"
-            value={Math.round(currentDegrees)}
-            onChange={handleSliderChange}
-            id="rotation-y-slider"
-          />
-          <div className="rotation-slider-labels">
-            <span>0°</span>
-            <span>90°</span>
-            <span>180°</span>
-            <span>270°</span>
-            <span>360°</span>
-          </div>
-        </div>
-
-        {/* Degree input */}
-        <div className="rotation-input-row">
-          <label className="rotation-input-label">Degrees:</label>
-          <input
-            type="number"
-            className="rotation-degree-input"
-            min="0"
-            max="360"
-            step="1"
-            value={Math.round(currentDegrees)}
-            onChange={(e) => updateRotation(Number(e.target.value))}
-            id="rotation-y-input"
-          />
-          <span className="rotation-unit">°</span>
-        </div>
-
-        {/* Quick rotation buttons */}
-        <div className="rotation-quick-btns">
-          <button onClick={() => rotateBy(-90)} title="Rotate -90°" className="rot-quick-btn">
-            <RotateCcw size={11} /> -90°
-          </button>
-          <button onClick={() => rotateBy(-45)} title="Rotate -45°" className="rot-quick-btn">
-            -45°
-          </button>
-          <button onClick={() => rotateBy(-15)} title="Rotate -15°" className="rot-quick-btn">
-            -15°
-          </button>
-          <button onClick={() => rotateBy(15)} title="Rotate +15°" className="rot-quick-btn">
-            +15°
-          </button>
-          <button onClick={() => rotateBy(45)} title="Rotate +45°" className="rot-quick-btn">
-            +45°
-          </button>
-          <button onClick={() => rotateBy(90)} title="Rotate +90°" className="rot-quick-btn">
-            <RotateCw size={11} /> +90°
-          </button>
-        </div>
-
-        {/* Reset rotation */}
-        <button
-          className="rotation-reset-btn"
-          onClick={() => updateRotation(0)}
-          title="Reset rotation to 0°"
-        >
-          <X size={12} />
-          Reset to 0°
+    <div style={O.panel} id="transform-panel">
+      {/* Header */}
+      <div style={O.header}>
+        <h3 style={O.headerTitle}>
+          <Compass size={16} style={{ color: '#10b981' }} />
+          Object Transform
+        </h3>
+        <button onClick={() => dispatch({ type: 'DESELECT_ALL' })} style={O.closeBtn}
+          onMouseEnter={e => e.currentTarget.style.color = '#374151'}
+          onMouseLeave={e => e.currentTarget.style.color = '#9CA3AF'}>
+          <X size={16} />
         </button>
       </div>
 
-      {/* ── Position (read-only info) ────────────────────────── */}
-      <div className="transform-section transform-info-section">
-        <div className="transform-section-header">
-          <span>Position</span>
+      <div style={O.body}>
+        {/* Object info */}
+        <div style={O.nameRow}>
+          <span style={O.itemName}>{selectedItem.name}</span>
+          {selectedItem.autoDetected && <span style={O.autoBadge}>Auto-detected</span>}
         </div>
-        <div className="transform-coords">
-          <span className="coord-item">
-            <span className="coord-label">X</span>
-            <span className="coord-value">{Number(pos?.x || 0).toFixed(2)}</span>
-          </span>
-          <span className="coord-item">
-            <span className="coord-label">Y</span>
-            <span className="coord-value">{Number(pos?.y || 0).toFixed(2)}</span>
-          </span>
-          <span className="coord-item">
-            <span className="coord-label">Z</span>
-            <span className="coord-value">{Number(pos?.z || 0).toFixed(2)}</span>
-          </span>
+
+        {/* ── Y-Axis Rotation ── */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span style={O.sectionLabel}>
+              <RotateCw size={12} /> Rotation (Y)
+            </span>
+            <span style={O.degValue}>{Math.round(currentDegrees)}°</span>
+          </div>
+
+          <input type="range" min="0" max="360" step="1"
+            value={Math.round(currentDegrees)} onChange={handleSliderChange}
+            style={O.sliderInput} />
+          <div style={O.sliderLabels}>
+            <span>0°</span><span>180°</span><span>360°</span>
+          </div>
+
+          {/* Quick rotation buttons */}
+          <div style={O.quickGrid}>
+            {quickBtns.map((btn, idx) => (
+              <button key={idx} onClick={() => rotateBy(btn.delta)} style={O.quickBtn}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F0FDF4'; e.currentTarget.style.borderColor = '#BBF7D0'; e.currentTarget.style.color = '#059669'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#4B5563'; }}>
+                {btn.Icon && <btn.Icon size={10} />}
+                {btn.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* ── Scale (read-only info) ───────────────────────────── */}
-      <div className="transform-section transform-info-section">
-        <div className="transform-section-header">
-          <span>Scale</span>
-          <span className="transform-value">{Number(scale || 1).toFixed(2)}</span>
+        {/* ── Position & Scale ── */}
+        <div style={O.detailGrid}>
+          <div>
+            <div style={O.detailLabel}>Position</div>
+            <div style={O.detailBox}>
+              <div style={O.coordRow}><span style={O.coordLabel}>X</span><span style={O.coordValue}>{Number(pos?.x || 0).toFixed(1)}</span></div>
+              <div style={O.coordRow}><span style={O.coordLabel}>Y</span><span style={O.coordValue}>{Number(pos?.y || 0).toFixed(1)}</span></div>
+              <div style={{ ...O.coordRow, marginBottom: 0 }}><span style={O.coordLabel}>Z</span><span style={O.coordValue}>{Number(pos?.z || 0).toFixed(1)}</span></div>
+            </div>
+          </div>
+          <div>
+            <div style={O.detailLabel}>Scale</div>
+            <div style={O.scaleBox}>
+              <span style={O.scaleValue}>{Number(scale || 1).toFixed(2)}</span>
+              <span style={O.scaleLabel}>Uniform</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* ── Save to Backend ──────────────────────────────────── */}
-      <button
-        className="rotation-save-btn"
-        onClick={handleSaveRotation}
-        disabled={saving}
-      >
-        {saving ? (
-          <><span className="spin-icon"><RotateCw size={13} /></span> Saving...</>
-        ) : saveStatus === 'saved' ? (
-          <><CheckCircle2 size={13} /> Saved!</>
-        ) : (
-          <><Save size={13} /> Save Rotation</>
-        )}
-      </button>
+        {/* ── Save Button ── */}
+        <button onClick={handleSaveRotation} disabled={saving} style={O.saveBtn(saveStatus)}
+          onMouseEnter={e => { if (saveStatus !== 'saved') { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.color = '#059669'; } }}
+          onMouseLeave={e => { if (saveStatus !== 'saved') { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.color = '#374151'; } }}>
+          {saving ? (
+            <><RotateCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Saving Changes...</>
+          ) : saveStatus === 'saved' ? (
+            <><CheckCircle2 size={14} /> Transformations Saved</>
+          ) : (
+            <><Save size={14} /> Save Transformations</>
+          )}
+        </button>
 
-      {saveStatus === 'error' && (
-        <p className="rotation-save-error">Failed to save — check connection</p>
-      )}
-
-      {/* ── Math reference (dev hint) ────────────────────────── */}
-      <div className="transform-math-hint">
-        <span>
-          {Math.round(currentDegrees)}° = {currentRadians.toFixed(4)} rad
-        </span>
+        {saveStatus === 'error' && <p style={O.errorMsg}>Failed to save — check connection</p>}
       </div>
     </div>
   );

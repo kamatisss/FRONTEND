@@ -11,9 +11,8 @@ const TABS = [
   { key: 'furniture', label: 'Furniture', icon: Armchair },
 ];
 
-export default function AssetLibrarySidebar() {
+export default function AssetLibrarySidebar({ category }) {
   const { state, dispatch } = useDesign();
-  const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
   const [loadingProducts, setLoadingProducts] = useState(false);
 
@@ -33,7 +32,7 @@ export default function AssetLibrarySidebar() {
   }, [state.products.length, dispatch]);
 
   const filtered = state.products.filter(p => {
-    const matchTab = activeTab === 'all' || p.category === activeTab;
+    const matchTab = !category || category === 'all' || p.category === category;
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
     return matchTab && matchSearch;
   });
@@ -53,40 +52,15 @@ export default function AssetLibrarySidebar() {
   };
 
   return (
-    <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-lg rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 p-6 flex flex-col font-sans h-full overflow-hidden">
-      <h3 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center mb-5">
-        <Leaf size={20} className="mr-2 text-emerald-600" />
-        Asset Library
-      </h3>
-
-      {/* Tabs */}
-      <div className="flex overflow-x-auto gap-2 pb-2 whitespace-nowrap scrollbar-hide mb-4">
-        {TABS.map(t => {
-          const Icon = t.icon;
-          const active = activeTab === t.key;
-          return (
-            <button
-              key={t.key}
-              className={`flex items-center px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 shadow-sm ${
-                active
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
-              }`}
-              onClick={() => setActiveTab(t.key)}
-            >
-              <Icon size={16} className="mr-1.5" />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-
+    <div className="flex flex-col font-sans h-full overflow-hidden bg-white">
       {/* Search */}
-      <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <div className="relative mb-6 shrink-0">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search size={16} className="text-gray-400" />
+        </div>
         <input
           type="text"
-          className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm font-medium rounded-xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-emerald-500 outline-none transition-all shadow-sm"
+          className="w-full bg-gray-50 text-gray-800 text-sm font-medium rounded-xl pl-10 pr-3 py-2.5 border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all placeholder-gray-400 shadow-sm"
           placeholder="Search assets..."
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -94,9 +68,9 @@ export default function AssetLibrarySidebar() {
       </div>
 
       {/* Product grid */}
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-        <div className="grid grid-cols-2 gap-3 pb-2">
-          {loadingProducts && <p className="text-slate-500 text-sm italic col-span-2 text-center py-4">Loading catalog...</p>}
+      <div className="flex-1 overflow-y-auto pr-1 no-scrollbar">
+        <div className="grid grid-cols-2 gap-4 pb-4">
+          {loadingProducts && <p className="text-gray-400 text-sm italic col-span-2 text-center py-8">Loading catalog...</p>}
           {filtered.map(product => (
             <AssetCard
               key={product.id}
@@ -106,29 +80,35 @@ export default function AssetLibrarySidebar() {
             />
           ))}
           {!loadingProducts && filtered.length === 0 && (
-            <p className="col-span-2 text-center text-sm text-slate-500 py-4">No matching assets found.</p>
+            <div className="col-span-2 text-center py-12">
+              <div className="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Search size={20} className="text-gray-300" />
+              </div>
+              <p className="text-sm text-gray-500 font-medium">No matching assets found.</p>
+            </div>
           )}
         </div>
       </div>
 
       {/* Selection hint */}
       {isPlacing && state.previewObject && (
-        <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <p className="text-sm text-indigo-900 dark:text-indigo-200 flex items-center mb-1">
-            <MapPin size={16} className="mr-2 text-indigo-500" />
-            Placing: <strong className="ml-1">{state.previewObject.name}</strong>
-          </p>
-          <div className="flex justify-between items-center mt-2">
-            <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
-              ₱{Number(state.previewObject.unit_price || state.previewObject.price).toLocaleString()}
-            </p>
-            <button
-              className="flex items-center text-xs font-semibold px-2 py-1 bg-white/50 dark:bg-black/20 text-indigo-600 dark:text-indigo-300 rounded hover:bg-white dark:hover:bg-black/40 transition-colors"
-              onClick={() => dispatch({ type: 'CANCEL_PLACEMENT' })}
-            >
-              <X size={12} className="mr-1" />
-              Cancel
-            </button>
+        <div className="mt-4 p-4 bg-emerald-50 border border-emerald-100 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300 shadow-sm">
+          <p className="text-xs font-bold text-emerald-700 uppercase tracking-widest mb-2">Active Placement</p>
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-white rounded-lg border border-emerald-100 flex items-center justify-center shrink-0">
+                <Leaf size={20} className="text-emerald-500" />
+             </div>
+             <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-800 truncate">{state.previewObject.name}</p>
+                <p className="text-xs font-bold text-emerald-600">₱{Number(state.previewObject.unit_price || state.previewObject.price).toLocaleString()}</p>
+             </div>
+             <button
+                className="p-1.5 bg-white text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all border border-gray-200"
+                onClick={() => dispatch({ type: 'CANCEL_PLACEMENT' })}
+                title="Cancel Placement"
+              >
+                <X size={16} />
+              </button>
           </div>
         </div>
       )}

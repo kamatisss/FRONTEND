@@ -1,139 +1,261 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Mail, Leaf, AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, User, Lock, Leaf, AlertCircle, CheckCircle2, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
+import { resetPassword } from '../services/api';
 
 export default function ForgotPassword() {
-  const [email, setEmail]       = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [success, setSuccess]   = useState(false);
-  const [error, setError]       = useState('');
+  const [step, setStep]               = useState(1); // 1 = identify, 2 = new password
+  const [username, setUsername]       = useState('');
+  const [email, setEmail]             = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPwd, setConfirmPwd]   = useState('');
+  const [showPwd, setShowPwd]         = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [success, setSuccess]         = useState(false);
+  const [error, setError]             = useState('');
 
-  const handleSubmit = async (e) => {
+  // Step 1: Verify identity (username + email)
+  const handleVerify = (e) => {
     e.preventDefault();
-    setLoading(true);
+    setError('');
+    if (!username.trim() || !email.trim()) {
+      setError('Please enter both your username and email.');
+      return;
+    }
+    setStep(2);
+  };
+
+  // Step 2: Submit new password
+  const handleReset = async (e) => {
+    e.preventDefault();
     setError('');
 
-    // Simulate API call — replace with real Django reset endpoint when available
-    // e.g. POST /api/auth/password-reset/  { email }
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPwd) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1500)); // Simulated network delay
-      // When Django's email reset is configured:
-      // await fetch('http://localhost:8000/api/auth/password-reset/', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email })
-      // });
+      await resetPassword({ username, email, new_password: newPassword });
       setSuccess(true);
-    } catch {
-      setError('Something went wrong. Please try again.');
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-slate-100 px-4">
-
-      {/* Background Decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-emerald-200/30 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-teal-200/20 rounded-full blur-3xl"></div>
-      </div>
+    <div className="auth-page-wrapper">
+      {/* Background blobs */}
+      <div className="auth-bg-blob auth-bg-blob--top" />
+      <div className="auth-bg-blob auth-bg-blob--bottom" />
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="w-full max-w-md relative z-10"
+        className="auth-card-container"
       >
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-200/60 border border-white/60 p-8 md:p-10">
-
+        <div className="auth-card">
           {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
-              <Leaf size={32} className="text-emerald-600" />
+          <div className="auth-logo-section">
+            <div className="auth-logo-icon">
+              <Leaf size={32} className="auth-logo-leaf" />
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Reset Password</h1>
-            <p className="text-sm text-slate-500 mt-1 text-center leading-relaxed">
-              Enter your account email and we'll send you a secure link to reset your password.
+            <h1 className="auth-title">Reset Password</h1>
+            <p className="auth-subtitle">
+              {step === 1
+                ? "Enter your username and email to verify your account."
+                : "Choose a new password for your account."}
             </p>
           </div>
 
-          {/* Error */}
-          {error && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-700 rounded-xl px-4 py-3 text-sm mb-6 font-medium"
-            >
-              <AlertCircle size={18} className="shrink-0" />
-              <span>{error}</span>
-            </motion.div>
-          )}
+          {/* Error Banner */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="auth-error-banner"
+              >
+                <AlertCircle size={18} />
+                <span>{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Success State */}
           {success ? (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              className="text-center"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="auth-success-block"
             >
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center">
-                  <CheckCircle2 size={36} className="text-emerald-500" />
-                </div>
+              <div className="auth-success-icon-wrap">
+                <CheckCircle2 size={36} className="auth-success-icon" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Check your inbox!</h2>
-              <p className="text-sm text-slate-500 mb-6">
-                If an account exists for <strong>{email}</strong>, you'll receive a password reset email within a few minutes.
+              <h2 className="auth-success-title">Password updated!</h2>
+              <p className="auth-success-body">
+                Your password has been reset successfully. You can now log in with your new password.
               </p>
-              <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all active:scale-95">
-                <ArrowLeft size={16} /> Back to Login
+              <Link to="/login" className="auth-btn auth-btn--primary auth-btn--full">
+                <ArrowLeft size={16} /> Go to Login
               </Link>
             </motion.div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Email Address</label>
-                <div className="relative">
-                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  <input
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
+            <AnimatePresence mode="wait">
+              {/* ── Step 1: Identity Verification ── */}
+              {step === 1 && (
+                <motion.form
+                  key="step1"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.25 }}
+                  onSubmit={handleVerify}
+                  className="auth-form"
+                >
+                  {/* Username */}
+                  <div className="auth-field">
+                    <label className="auth-label">Username</label>
+                    <div className="auth-input-wrap">
+                      <User size={18} className="auth-input-icon" />
+                      <input
+                        id="fp-username"
+                        type="text"
+                        placeholder="Your username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        autoComplete="username"
+                        className="auth-input auth-input--icon"
+                      />
+                    </div>
+                  </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full mt-2 py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-xl font-extrabold text-base transition-all shadow-lg shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <><Loader2 size={18} className="animate-spin" /> Sending link...</>
-                ) : (
-                  'Send Reset Link'
-                )}
-              </button>
+                  {/* Email */}
+                  <div className="auth-field">
+                    <label className="auth-label">Email Address</label>
+                    <div className="auth-input-wrap">
+                      <Mail size={18} className="auth-input-icon" />
+                      <input
+                        id="fp-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        autoComplete="email"
+                        className="auth-input auth-input--icon"
+                      />
+                    </div>
+                  </div>
 
-              <p className="text-center text-sm text-slate-500 pt-2">
-                Remember your password?{' '}
-                <Link to="/login" className="text-emerald-600 hover:text-emerald-700 font-bold transition-colors">
-                  Sign in →
-                </Link>
-              </p>
-            </form>
+                  <button type="submit" className="auth-btn auth-btn--primary auth-btn--full">
+                    Verify Account →
+                  </button>
+
+                  <p className="auth-footer-text">
+                    Remember your password?{' '}
+                    <Link to="/login" className="auth-link">Sign in →</Link>
+                  </p>
+                </motion.form>
+              )}
+
+              {/* ── Step 2: New Password ── */}
+              {step === 2 && (
+                <motion.form
+                  key="step2"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.25 }}
+                  onSubmit={handleReset}
+                  className="auth-form"
+                >
+                  {/* Step indicator */}
+                  <div className="fp-step-info">
+                    <button
+                      type="button"
+                      onClick={() => { setStep(1); setError(''); }}
+                      className="fp-back-btn"
+                    >
+                      <ArrowLeft size={14} /> Back
+                    </button>
+                    <span className="fp-step-label">Resetting for <strong>{username}</strong></span>
+                  </div>
+
+                  {/* New Password */}
+                  <div className="auth-field">
+                    <label className="auth-label">New Password</label>
+                    <div className="auth-input-wrap">
+                      <Lock size={18} className="auth-input-icon" />
+                      <input
+                        id="fp-new-password"
+                        type={showPwd ? 'text' : 'password'}
+                        placeholder="Min. 8 characters"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        autoComplete="new-password"
+                        className="auth-input auth-input--icon auth-input--icon-right"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPwd(p => !p)}
+                        className="auth-toggle-pwd"
+                        aria-label={showPwd ? 'Hide password' : 'Show password'}
+                      >
+                        {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="auth-field">
+                    <label className="auth-label">Confirm New Password</label>
+                    <div className="auth-input-wrap">
+                      <Lock size={18} className="auth-input-icon" />
+                      <input
+                        id="fp-confirm-password"
+                        type={showPwd ? 'text' : 'password'}
+                        placeholder="Repeat your new password"
+                        value={confirmPwd}
+                        onChange={(e) => setConfirmPwd(e.target.value)}
+                        required
+                        autoComplete="new-password"
+                        className="auth-input auth-input--icon"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="auth-btn auth-btn--primary auth-btn--full"
+                  >
+                    {loading ? (
+                      <><Loader2 size={18} className="auth-spinner" /> Resetting...</>
+                    ) : 'Reset Password'}
+                  </button>
+                </motion.form>
+              )}
+            </AnimatePresence>
           )}
         </div>
 
         {/* Back to Landing */}
-        <p className="text-center mt-6">
-          <Link to="/" className="text-sm text-slate-400 hover:text-emerald-600 transition-colors font-medium">
-            ← Back to Garden Studio
-          </Link>
+        <p className="auth-back-link">
+          <Link to="/">← Back to Garden Studio</Link>
         </p>
       </motion.div>
     </div>

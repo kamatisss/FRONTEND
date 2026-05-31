@@ -5,7 +5,113 @@ import {
   Save, FolderOpen, Sparkles, X, Loader, HardDrive, Send
 } from 'lucide-react';
 
-export default function SaveLoadPanel() {
+/* ═══════════════════════════════════════════════════════════════
+   INLINE STYLES
+   ═══════════════════════════════════════════════════════════════ */
+const T = {
+  row: { display: 'flex', alignItems: 'center', gap: 8 },
+  iconBtn: {
+    width: 40, height: 40, borderRadius: 8, border: '1px solid #E5E7EB',
+    background: '#fff', cursor: 'pointer', display: 'flex',
+    alignItems: 'center', justifyContent: 'center',
+    color: '#6B7280', transition: 'all 0.15s',
+  },
+  submitBtn: {
+    marginLeft: 8, padding: '8px 14px', background: '#111827', color: '#fff',
+    borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, border: 'none',
+    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+    transition: 'background 0.15s',
+  },
+  dirtyDot: {
+    width: 8, height: 8, borderRadius: '50%', background: '#F59E0B',
+    marginLeft: 4, flexShrink: 0,
+  },
+  /* Modal */
+  overlay: {
+    position: 'fixed', inset: 0, zIndex: 100,
+    background: 'rgba(17,24,39,0.5)', backdropFilter: 'blur(8px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+  },
+  modal: {
+    background: '#fff', borderRadius: 20, width: '100%', maxWidth: 440,
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '1px solid #E5E7EB', overflow: 'hidden',
+  },
+  modalHeader: {
+    padding: '20px 32px', borderBottom: '1px solid #E5E7EB',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  },
+  modalTitle: {
+    fontSize: '1.15rem', fontWeight: 900, color: '#1f2937',
+    display: 'flex', alignItems: 'center', gap: 12, margin: 0,
+  },
+  modalTitleIcon: {
+    width: 40, height: 40, background: '#FFF7ED', borderRadius: 12,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EA580C',
+  },
+  modalCloseBtn: {
+    width: 36, height: 36, background: '#F3F4F6', border: 'none', borderRadius: '50%',
+    cursor: 'pointer', color: '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  modalBody: { padding: 24, maxHeight: 400, overflowY: 'auto' },
+  loadingText: { textAlign: 'center', padding: '32px 0', color: '#9CA3AF', fontWeight: 500 },
+  emptyText: { textAlign: 'center', padding: '48px 0', color: '#9CA3AF', fontStyle: 'italic' },
+  designRow: {
+    padding: 16, borderRadius: 12, background: '#F9FAFB', marginBottom: 12,
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    transition: 'background 0.15s',
+  },
+  designName: { fontWeight: 700, color: '#1f2937', fontSize: '0.9rem', marginBottom: 4 },
+  designMeta: { fontSize: 10, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em' },
+  openBtn: {
+    padding: '8px 16px', background: '#fff', color: '#059669', fontSize: 12, fontWeight: 700,
+    borderRadius: 10, border: '1px solid #E5E7EB', cursor: 'pointer', transition: 'all 0.15s',
+  },
+  deleteBtn: {
+    padding: 8, background: 'none', border: 'none', cursor: 'pointer',
+    color: '#D1D5DB', transition: 'color 0.15s',
+  },
+  /* Card variant */
+  card: {
+    background: '#fff', borderRadius: 16, border: '1px solid #E5E7EB',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden',
+  },
+  cardHeader: {
+    padding: '14px 20px', borderBottom: '1px solid #F3F4F6',
+    display: 'flex', alignItems: 'center', gap: 12,
+  },
+  cardTitle: { color: '#1f2937', fontWeight: 700, fontSize: '0.85rem', margin: 0 },
+  cardBody: { padding: 20 },
+  nameInput: {
+    width: '100%', padding: '10px 14px', background: '#F9FAFB',
+    border: '1px solid #E5E7EB', borderRadius: 10, fontSize: '0.85rem',
+    fontWeight: 500, outline: 'none', color: '#1f2937', boxSizing: 'border-box',
+    marginBottom: 16, transition: 'border-color 0.2s',
+  },
+  cardBtnRow: { display: 'flex', gap: 8, marginBottom: 12 },
+  saveBtn: {
+    flex: 1, padding: '10px 0', background: '#059669', color: '#fff',
+    border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700,
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    transition: 'background 0.15s',
+  },
+  loadBtn: {
+    flex: 1, padding: '10px 0', background: '#fff', color: '#374151',
+    border: '1px solid #E5E7EB', borderRadius: 10, fontSize: 12, fontWeight: 700,
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    transition: 'background 0.15s',
+  },
+  cardSubmitBtn: {
+    width: '100%', padding: '10px 0', background: '#111827', color: '#fff',
+    border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700,
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    transition: 'background 0.15s', marginBottom: 8,
+  },
+  msgSuccess: { fontSize: 11, fontWeight: 700, textAlign: 'center', color: '#059669', marginTop: 8 },
+  msgError: { fontSize: 11, fontWeight: 700, textAlign: 'center', color: '#EF4444', marginTop: 8 },
+  dirtyLabel: { fontSize: 10, fontWeight: 700, textAlign: 'center', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 8 },
+};
+
+export default function SaveLoadPanel({ toolbarVariant }) {
   const { state, dispatch, totalCost } = useDesign();
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -31,11 +137,8 @@ export default function SaveLoadPanel() {
     }
   };
 
-  // Fetch saved designs when modal opens
   useEffect(() => {
-    if (showModal) {
-      fetchDesigns();
-    }
+    if (showModal) fetchDesigns();
   }, [showModal]);
 
   const fetchDesigns = async () => {
@@ -62,7 +165,7 @@ export default function SaveLoadPanel() {
         placed_items: state.placedItems.map(item => ({
           product_id: item.productId,
           name: item.name,
-          model_type: item.modelType,
+          model_type: item.model_type,
           price: item.price,
           position: item.position,
           rotation: item.rotation,
@@ -73,7 +176,6 @@ export default function SaveLoadPanel() {
         terrain_height: state.terrainHeight,
         time_of_day: state.timeOfDay,
       };
-
       const result = await saveDesign(payload);
       dispatch({ type: 'SET_DESIGN_META', payload: { designId: result.id } });
       dispatch({ type: 'MARK_CLEAN' });
@@ -134,87 +236,131 @@ export default function SaveLoadPanel() {
     setMessage('');
   };
 
-  return (
-    <div className="save-load-panel">
-      <h3>
-        <HardDrive size={15} style={{ marginRight: 6, verticalAlign: 'middle', color: '#10b981' }} />
-        Designs
-      </h3>
-
-      {/* Design name */}
-      <input
-        type="text"
-        className="design-name-input"
-        value={state.designName}
-        onChange={e => dispatch({ type: 'SET_DESIGN_META', payload: { designName: e.target.value } })}
-        placeholder="Design name..."
-      />
-
-      {/* Action buttons */}
-      <div className="save-load-actions">
-        <button className="save-btn" onClick={handleSave} disabled={saving}>
-          {saving ? (
-            <><Loader size={13} className="spin-icon" style={{ marginRight: 4 }} /> Saving...</>
-          ) : (
-            <><Save size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Save</>
+  /* ── Load Modal (shared between variants) ── */
+  const loadModal = showModal ? (
+    <div style={T.overlay} onClick={() => setShowModal(false)}>
+      <div style={T.modal} onClick={e => e.stopPropagation()}>
+        <div style={T.modalHeader}>
+          <h3 style={T.modalTitle}>
+            <div style={T.modalTitleIcon}><FolderOpen size={20} /></div>
+            Saved Designs
+          </h3>
+          <button onClick={() => setShowModal(false)} style={T.modalCloseBtn}>
+            <X size={20} />
+          </button>
+        </div>
+        <div style={T.modalBody}>
+          {loadingList && <p style={T.loadingText}>Loading designs...</p>}
+          {!loadingList && state.savedDesigns.length === 0 && (
+            <p style={T.emptyText}>No saved designs found.</p>
           )}
+          {state.savedDesigns.map(d => (
+            <div key={d.id} style={T.designRow}
+              onMouseEnter={e => e.currentTarget.style.background = '#F0FDF4'}
+              onMouseLeave={e => e.currentTarget.style.background = '#F9FAFB'}>
+              <div>
+                <p style={T.designName}>{d.name || 'Untitled'}</p>
+                <p style={T.designMeta}>₱{Number(d.total_cost).toLocaleString()} · {new Date(d.updated_at).toLocaleDateString()}</p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => handleLoad(d.id)} style={T.openBtn}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.background = '#F0FDF4'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.background = '#fff'; }}>
+                  Open
+                </button>
+                <button onClick={() => handleDelete(d.id)} style={T.deleteBtn}
+                  onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#D1D5DB'}>
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  /* ══════════════════════════════════════════════════════════════
+     TOOLBAR VARIANT — horizontal icon row in the top toolbar
+     ══════════════════════════════════════════════════════════════ */
+  if (toolbarVariant) {
+    return (
+      <div style={T.row}>
+        {/* New */}
+        <button onClick={handleNew} style={T.iconBtn} title="New Design"
+          onMouseEnter={e => { e.currentTarget.style.background = '#F0FDF4'; e.currentTarget.style.color = '#059669'; e.currentTarget.style.borderColor = '#BBF7D0'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.borderColor = '#E5E7EB'; }}>
+          <Sparkles size={22} />
         </button>
-        <button className="load-btn" onClick={() => setShowModal(true)}>
-          <FolderOpen size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-          Load
+
+        {/* Save */}
+        <button onClick={handleSave} disabled={saving} style={T.iconBtn} title="Save Design"
+          onMouseEnter={e => { e.currentTarget.style.background = '#F0FDF4'; e.currentTarget.style.color = '#059669'; e.currentTarget.style.borderColor = '#BBF7D0'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.borderColor = '#E5E7EB'; }}>
+          {saving ? <Loader size={22} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={22} />}
         </button>
-        <button className="new-btn" onClick={handleNew}>
-          <Sparkles size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-          New
+
+        {/* Load */}
+        <button onClick={() => setShowModal(true)} style={T.iconBtn} title="Open Design"
+          onMouseEnter={e => { e.currentTarget.style.background = '#F0FDF4'; e.currentTarget.style.color = '#059669'; e.currentTarget.style.borderColor = '#BBF7D0'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.borderColor = '#E5E7EB'; }}>
+          <FolderOpen size={22} />
         </button>
+
+        {/* Unsaved indicator */}
+        {state.isDirty && <div style={T.dirtyDot} title="Unsaved changes" />}
+
+        {/* Submit for Review */}
         {state.designId && (
-          <button className="submit-btn" onClick={handleSubmitForReview} disabled={submitting || state.isDirty} style={{ background: '#3b82f6', color: 'white' }}>
-            <Send size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-            {submitting ? 'Submitting...' : 'Submit for Review'}
+          <button onClick={handleSubmitForReview} disabled={submitting || state.isDirty}
+            style={{ ...T.submitBtn, opacity: (submitting || state.isDirty) ? 0.5 : 1 }}
+            onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = '#000'; }}
+            onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = '#111827'; }}>
+            <Send size={14} />
+            {submitting ? 'Submitting...' : 'Submit Review'}
           </button>
         )}
+
+        {loadModal}
       </div>
+    );
+  }
 
-      {/* Status */}
-      {message && <p className="save-message">{message}</p>}
-      {state.isDirty && <p className="unsaved-indicator">● Unsaved changes</p>}
-
-      {/* Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>
-                <FolderOpen size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                Saved Designs
-              </h3>
-              <button className="modal-close" onClick={() => setShowModal(false)}>
-                <X size={16} />
-              </button>
-            </div>
-            <div className="modal-body">
-              {loadingList && <p>Loading...</p>}
-              {!loadingList && state.savedDesigns.length === 0 && <p>No saved designs yet</p>}
-              {state.savedDesigns.map(d => (
-                <div key={d.id} className="saved-design-item">
-                  <div className="saved-design-info">
-                    <span className="saved-name">{d.name}</span>
-                    <span className="saved-meta">
-                      ₱{Number(d.total_cost).toLocaleString()} · {new Date(d.updated_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="saved-design-actions">
-                    <button onClick={() => handleLoad(d.id)}>Open</button>
-                    <button className="delete" onClick={() => handleDelete(d.id)}>
-                      <X size={12} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+  /* ══════════════════════════════════════════════════════════════
+     CARD VARIANT — full panel (fallback)
+     ══════════════════════════════════════════════════════════════ */
+  return (
+    <div style={T.card}>
+      <div style={T.cardHeader}>
+        <HardDrive size={18} style={{ color: '#10b981' }} />
+        <h3 style={T.cardTitle}>Design Settings</h3>
+      </div>
+      <div style={T.cardBody}>
+        <input type="text" value={state.designName}
+          onChange={e => dispatch({ type: 'SET_DESIGN_META', payload: { designName: e.target.value } })}
+          placeholder="Untitled Design" style={T.nameInput}
+          onFocus={e => { e.target.style.borderColor = '#10b981'; e.target.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.15)'; }}
+          onBlur={e => { e.target.style.borderColor = '#E5E7EB'; e.target.style.boxShadow = 'none'; }}
+        />
+        <div style={T.cardBtnRow}>
+          <button onClick={handleSave} disabled={saving} style={T.saveBtn}>
+            {saving ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={14} />} Save
+          </button>
+          <button onClick={() => setShowModal(true)} style={T.loadBtn}>
+            <FolderOpen size={14} /> Load
+          </button>
         </div>
-      )}
+        {state.designId && (
+          <button onClick={handleSubmitForReview} disabled={submitting || state.isDirty}
+            style={{ ...T.cardSubmitBtn, opacity: (submitting || state.isDirty) ? 0.5 : 1 }}>
+            <Send size={14} /> Submit for Review
+          </button>
+        )}
+        {message && <p style={message.includes('fail') ? T.msgError : T.msgSuccess}>{message}</p>}
+        {state.isDirty && <p style={T.dirtyLabel}>● Unsaved changes</p>}
+      </div>
+      {loadModal}
     </div>
   );
 }

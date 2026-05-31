@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, User, Lock, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { User, Lock, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -65,84 +65,115 @@ export default function Register() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <div className="login-logo">
-            <UserPlus size={32} color="var(--accent)" />
-          </div>
-          <h2>Create Account</h2>
-          <p>Join Garden Design Studio today</p>
-        </div>
-
-        {error && (
-          <div className="login-error">
-            <AlertCircle size={18} />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="input-group">
-            <User className="input-icon" size={20} />
-            <input
-              type="text"
-              name="username"
-              placeholder="Username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', fontFamily: "'Inter', sans-serif" }}>
+      
+      {/* Left Side: Form Area */}
+      <div style={{ flex: 1, backgroundColor: '#ffffff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '40px' }}>
+        <div style={{ width: '100%', maxWidth: '400px' }}>
+          
+          <div style={{ marginBottom: '32px', textAlign: 'left' }}>
+            <h1 style={{ color: '#1e293b', fontSize: '32px', fontWeight: '800', margin: '0 0 8px 0' }}>Create Account</h1>
+            <p style={{ color: '#64748b', fontSize: '16px', margin: 0 }}>Join Garden Design Studio today</p>
           </div>
 
-          <div className="input-group">
-            <Mail className="input-icon" size={20} />
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
+          {error && (
+            <div style={{ backgroundColor: '#fef2f2', border: '1px solid #f87171', color: '#b91c1c', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', fontSize: '14px', fontWeight: '500' }}>
+              <AlertCircle size={18} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* Username Input */}
+            <div style={{ position: 'relative' }}>
+              <User size={20} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)' }} />
+              <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+                style={{ width: '100%', padding: '14px 16px 14px 48px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff', color: '#1e293b', fontSize: '15px', outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box' }}
+                onFocus={(e) => e.target.style.borderColor = '#10b981'}
+                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+              />
+            </div>
+
+            {/* Email Input */}
+            <div style={{ position: 'relative' }}>
+              <Mail size={20} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)' }} />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email Address"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                style={{ width: '100%', padding: '14px 16px 14px 48px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff', color: '#1e293b', fontSize: '15px', outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box' }}
+                onFocus={(e) => e.target.style.borderColor = '#10b981'}
+                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+              />
+            </div>
+
+            {/* Password Input */}
+            <div style={{ position: 'relative' }}>
+              <Lock size={20} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)' }} />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                style={{ width: '100%', padding: '14px 16px 14px 48px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff', color: '#1e293b', fontSize: '15px', outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box' }}
+                onFocus={(e) => e.target.style.borderColor = '#10b981'}
+                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+              />
+            </div>
+
+            {/* Confirm Password Input */}
+            <div style={{ position: 'relative' }}>
+              <CheckCircle2 size={20} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '16px', transform: 'translateY(-50%)' }} />
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                style={{ width: '100%', padding: '14px 16px 14px 48px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff', color: '#1e293b', fontSize: '15px', outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box' }}
+                onFocus={(e) => e.target.style.borderColor = '#10b981'}
+                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              style={{ width: '100%', padding: '16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', transition: 'background-color 0.2s', marginTop: '8px', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#10b981'}
+            >
+              {loading ? 'Creating account...' : 'Sign Up'}
+            </button>
+          </form>
+
+          <div style={{ marginTop: '32px', textAlign: 'center' }}>
+            <p style={{ color: '#64748b', fontSize: '15px', margin: 0 }}>
+              Already have an account?{' '}
+              <Link to="/login" style={{ color: '#10b981', textDecoration: 'none', fontWeight: '600' }} onMouseEnter={(e) => e.target.style.textDecoration = 'underline'} onMouseLeave={(e) => e.target.style.textDecoration = 'none'}>Sign in here</Link>
+            </p>
           </div>
 
-          <div className="input-group">
-            <Lock className="input-icon" size={20} />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="input-group">
-            <CheckCircle2 className="input-icon" size={20} />
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm Password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <button type="submit" className="login-button" disabled={loading}>
-            {loading ? 'Creating account...' : 'Sign Up'}
-          </button>
-        </form>
-
-        <div className="login-footer-link">
-          <p>
-            Already have an account?{' '}
-            <Link to="/login" className="auth-link">Sign in here</Link>
-          </p>
         </div>
       </div>
+
+      {/* Right Side: Hero Image */}
+      <div style={{ flex: 1, backgroundImage: 'url(/hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#f1f5f9', display: window.innerWidth > 768 ? 'block' : 'none' }}>
+      </div>
+
     </div>
   );
 }
