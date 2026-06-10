@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDesign } from '../context/DesignContext';
-import { ClipboardList, Pencil, Trash2, ShoppingCart, X, CreditCard, Loader2 } from 'lucide-react';
+import { ClipboardList, Pencil, Trash2, ShoppingCart, X, CreditCard, Loader2, Truck, Phone } from 'lucide-react';
 import { submitOrder, createCheckoutSession } from '../services/api';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -86,7 +86,8 @@ const P = {
   },
   modalCard: {
     background: '#fff', borderRadius: 20, width: '100%', maxWidth: 440,
-    boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '1px solid #E5E7EB', overflow: 'hidden',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '1px solid #E5E7EB',
+    overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column',
   },
   modalHeader: {
     padding: '20px 32px', borderBottom: '1px solid #E5E7EB',
@@ -104,7 +105,7 @@ const P = {
     width: 36, height: 36, background: '#F3F4F6', border: 'none', borderRadius: '50%',
     cursor: 'pointer', color: '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  modalForm: { padding: 32 },
+  modalForm: { padding: 32, overflowY: 'auto', flex: 1 },
   fieldGroup: { marginBottom: 20 },
   fieldLabel: {
     display: 'block', fontSize: 11, fontWeight: 800, color: '#374151',
@@ -137,6 +138,40 @@ const P = {
     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
     boxShadow: '0 4px 14px rgba(0,0,0,0.15)', transition: 'background 0.2s',
   },
+  submitBtnCod: {
+    width: '100%', padding: 16, background: '#059669', color: '#fff',
+    border: 'none', borderRadius: 12, fontWeight: 700, fontSize: '0.85rem',
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+    boxShadow: '0 4px 14px rgba(5,150,105,0.25)', transition: 'background 0.2s',
+  },
+  /* ── Payment Method Cards ── */
+  paymentMethodWrap: {
+    display: 'flex', gap: 12, marginBottom: 0,
+  },
+  paymentCard: (active) => ({
+    flex: 1, padding: '14px 12px', borderRadius: 12, cursor: 'pointer',
+    background: active ? '#F0FDF4' : '#F9FAFB',
+    border: active ? '2px solid #10b981' : '1px solid #D1D5DB',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+    transition: 'all 0.2s',
+  }),
+  paymentCardIcon: (active) => ({
+    width: 36, height: 36, borderRadius: 10,
+    background: active ? '#D1FAE5' : '#E5E7EB',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: active ? '#059669' : '#6B7280',
+    transition: 'all 0.2s',
+  }),
+  paymentCardLabel: (active) => ({
+    fontSize: '0.78rem', fontWeight: 700,
+    color: active ? '#065F46' : '#6B7280',
+    textAlign: 'center', lineHeight: 1.3,
+  }),
+  paymentCardRadio: (active) => ({
+    width: 16, height: 16, borderRadius: '50%',
+    border: active ? '5px solid #059669' : '2px solid #D1D5DB',
+    background: '#fff', transition: 'all 0.2s',
+  }),
 };
 
 export default function ProjectSummaryPanel() {
@@ -145,7 +180,8 @@ export default function ProjectSummaryPanel() {
   const isPlacing = placementMode !== 'idle';
   const [showSummary, setShowSummary] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', address: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '' });
+  const [paymentMethod, setPaymentMethod] = useState('stripe');
   const [loading, setLoading] = useState(false);
 
   const handleEdit = (itemId) => {
@@ -163,16 +199,32 @@ export default function ProjectSummaryPanel() {
         return { id: product ? product.id : null, quantity: item.quantity };
       }).filter(item => item.id !== null);
 
-      const orderResult = await submitOrder({
+      const orderPayload = {
         customer_name: formData.name,
         customer_email: formData.email,
+        customer_phone: formData.phone,
         customer_address: formData.address,
+        payment_method: paymentMethod,
         total_price: totalCost,
         items: items,
-      });
-      const sessionData = await createCheckoutSession(orderResult.order_id);
-      dispatch({ type: 'CLEAR_DESIGN' });
-      window.location.href = sessionData.checkout_url;
+      };
+
+      const orderResult = await submitOrder(orderPayload);
+
+      if (paymentMethod === 'stripe') {
+        // Redirect to Stripe Checkout
+        const sessionData = await createCheckoutSession(orderResult.order_id);
+        dispatch({ type: 'CLEAR_DESIGN' });
+        window.location.href = sessionData.checkout_url;
+      } else {
+        // COD: order is saved, show success and close
+        dispatch({ type: 'CLEAR_DESIGN' });
+        setShowCheckout(false);
+        setShowSummary(false);
+        setFormData({ name: '', email: '', phone: '', address: '' });
+        alert('🎉 Order placed successfully! You will pay upon delivery.');
+        setLoading(false);
+      }
     } catch (error) {
       alert(`Checkout failed: ${error.message}`);
       setLoading(false);
@@ -301,6 +353,15 @@ export default function ProjectSummaryPanel() {
                 />
               </div>
               <div style={P.fieldGroup}>
+                <label style={P.fieldLabel}>Phone Number</label>
+                <input required type="tel" value={formData.phone}
+                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  style={P.fieldInput} placeholder="09XX XXX XXXX"
+                  onFocus={e => { e.target.style.borderColor = '#10b981'; e.target.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.15)'; }}
+                  onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
+                />
+              </div>
+              <div style={P.fieldGroup}>
                 <label style={P.fieldLabel}>Delivery Address</label>
                 <textarea required rows="2" value={formData.address}
                   onChange={e => setFormData({ ...formData, address: e.target.value })}
@@ -310,18 +371,52 @@ export default function ProjectSummaryPanel() {
                 />
               </div>
 
+              <div style={P.fieldGroup}>
+                <label style={P.fieldLabel}>Payment Method</label>
+                <div style={P.paymentMethodWrap}>
+                  <div
+                    onClick={() => setPaymentMethod('stripe')}
+                    style={P.paymentCard(paymentMethod === 'stripe')}
+                  >
+                    <div style={P.paymentCardRadio(paymentMethod === 'stripe')} />
+                    <div style={P.paymentCardIcon(paymentMethod === 'stripe')}>
+                      <CreditCard size={18} />
+                    </div>
+                    <span style={P.paymentCardLabel(paymentMethod === 'stripe')}>Online Payment</span>
+                  </div>
+                  <div
+                    onClick={() => setPaymentMethod('cod')}
+                    style={P.paymentCard(paymentMethod === 'cod')}
+                  >
+                    <div style={P.paymentCardRadio(paymentMethod === 'cod')} />
+                    <div style={P.paymentCardIcon(paymentMethod === 'cod')}>
+                      <Truck size={18} />
+                    </div>
+                    <span style={P.paymentCardLabel(paymentMethod === 'cod')}>Cash on Delivery</span>
+                  </div>
+                </div>
+              </div>
+
               <div style={P.amountBox}>
                 <span style={P.amountLabel}>Amount Due</span>
                 <span style={P.amountValue}>₱{totalCost.toLocaleString()}</span>
               </div>
 
-              <button type="submit" disabled={loading} style={{ ...P.submitBtn, opacity: loading ? 0.5 : 1 }}
-                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#000'; }}
-                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = '#111827'; }}>
+              <button type="submit" disabled={loading}
+                style={{ ...(paymentMethod === 'cod' ? P.submitBtnCod : P.submitBtn), opacity: loading ? 0.5 : 1 }}
+                onMouseEnter={e => {
+                  if (!loading) e.currentTarget.style.background = paymentMethod === 'cod' ? '#047857' : '#000';
+                }}
+                onMouseLeave={e => {
+                  if (!loading) e.currentTarget.style.background = paymentMethod === 'cod' ? '#059669' : '#111827';
+                }}
+              >
                 {loading ? (
                   <><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</>
-                ) : (
+                ) : paymentMethod === 'stripe' ? (
                   <><CreditCard size={20} /> Secure Checkout</>
+                ) : (
+                  <><Truck size={20} /> Confirm Order</>
                 )}
               </button>
             </form>

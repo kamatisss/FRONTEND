@@ -25,6 +25,24 @@ const MyBookings = () => {
         fetchMyBookings();
     }, []);
 
+    const handleCancelBooking = async (bookingId) => {
+        if (window.confirm("Are you sure you want to cancel this booking?")) {
+            try {
+                const res = await fetch(`http://localhost:8000/api/bookings/${bookingId}/`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authTokens.access}` }
+                });
+                if (res.ok) {
+                    setBookings(prevBookings => prevBookings.filter(b => b.id !== bookingId));
+                } else {
+                    alert("Failed to cancel booking.");
+                }
+            } catch (err) {
+                console.error("Error cancelling booking:", err);
+            }
+        }
+    };
+
     const getStatusBadge = (status) => {
         const base = {
             padding: '4px 14px',
@@ -169,28 +187,66 @@ const MyBookings = () => {
                         <table style={s.table}>
                             <thead>
                                 <tr>
-                                    <th style={s.th}>Date</th>
-                                    <th style={s.th}>Service Type</th>
+                                    <th style={s.th}>Service</th>
+                                    <th style={s.th}>Schedule & Location</th>
                                     <th style={s.thCenter}>Status</th>
-                                    <th style={s.th}>Notes</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {bookings.map(b => (
                                     <tr key={b.id}>
-                                        <td style={s.tdBold}>{b.scheduled_date}</td>
-                                        <td style={s.tdCapitalize}>{b.service_type}</td>
-                                        <td style={s.tdCenter}>
-                                            <span style={getStatusBadge(b.status)}>
-                                                {b.status}
-                                            </span>
+                                        <td style={s.td}>
+                                            <div style={{ fontWeight: 600, color: '#111827', textTransform: 'capitalize', marginBottom: '4px' }}>
+                                                {b.service_type}
+                                            </div>
+                                            {b.notes && (
+                                                <div style={{
+                                                    fontSize: '0.75rem', color: '#6B7280',
+                                                    maxWidth: '200px', whiteSpace: 'nowrap',
+                                                    overflow: 'hidden', textOverflow: 'ellipsis'
+                                                }} title={b.notes}>
+                                                    {b.notes}
+                                                </div>
+                                            )}
                                         </td>
-                                        <td style={s.td}>{b.notes || '—'}</td>
+                                        <td style={s.td}>
+                                            <div style={{ fontWeight: 500, color: '#374151', marginBottom: '4px' }}>
+                                                {b.scheduled_date} {b.preferred_time ? `• ${b.preferred_time}` : ''}
+                                            </div>
+                                            {(b.service_address || b.contact_number) && (
+                                                <div style={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: 1.4, maxWidth: '250px' }}>
+                                                    {b.service_address && <span style={{ display: 'block' }}>{b.service_address}</span>}
+                                                    {b.contact_number && <span style={{ display: 'block' }}>{b.contact_number}</span>}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td style={s.tdCenter}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+                                                <span style={getStatusBadge(b.status)}>
+                                                    {b.status}
+                                                </span>
+                                                {b.status.toLowerCase() === 'pending' && (
+                                                    <button 
+                                                        onClick={() => handleCancelBooking(b.id)}
+                                                        style={{
+                                                            fontSize: '0.75rem', fontWeight: 600, color: '#ef4444',
+                                                            textUnderlineOffset: '2px', cursor: 'pointer',
+                                                            background: 'none', border: 'none', padding: 0,
+                                                            transition: 'all 0.2s', textDecoration: 'none'
+                                                        }}
+                                                        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                                                        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))}
                                 {bookings.length === 0 && (
                                     <tr>
-                                        <td colSpan="4" style={s.empty}>
+                                        <td colSpan="3" style={s.empty}>
                                             You don't have any bookings yet.
                                         </td>
                                     </tr>

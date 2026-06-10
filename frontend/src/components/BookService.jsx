@@ -9,6 +9,9 @@ const BookService = () => {
     const [blackoutDates, setBlackoutDates] = useState([]);
     const [selectedDate, setSelectedDate] = useState(null);
     const [serviceType, setServiceType] = useState('maintenance');
+    const [contactNumber, setContactNumber] = useState('');
+    const [serviceAddress, setServiceAddress] = useState('');
+    const [preferredTime, setPreferredTime] = useState('anytime');
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -50,6 +53,9 @@ const BookService = () => {
                 body: JSON.stringify({
                     service_type: serviceType,
                     scheduled_date: formattedDate,
+                    contact_number: contactNumber,
+                    preferred_time: preferredTime,
+                    service_address: serviceAddress,
                     notes: notes
                 })
             });
@@ -57,6 +63,9 @@ const BookService = () => {
             if (res.ok) {
                 setMessage('Booking submitted successfully! Our staff will review it shortly.');
                 setSelectedDate(null);
+                setContactNumber('');
+                setServiceAddress('');
+                setPreferredTime('anytime');
                 setNotes('');
             } else {
                 const data = await res.json();
@@ -158,6 +167,13 @@ const BookService = () => {
         },
         formGroup: {
             marginBottom: '1.5rem',
+        },
+        twoColRow: {
+            display: 'flex',
+            gap: '1rem',
+        },
+        halfCol: {
+            flex: 1,
         },
         button: {
             width: '100%',
@@ -287,73 +303,116 @@ const BookService = () => {
                             </div>
                         </div>
 
-                        {/* Scheduled Date */}
+                        {/* Contact Number */}
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Scheduled Date</label>
-                            <div className="custom-datepicker-wrapper" style={{ position: 'relative' }}>
-                                <DatePicker
-                                    selected={selectedDate}
-                                    onChange={(date) => setSelectedDate(date)}
-                                    excludeDates={blackoutDates}
-                                    minDate={new Date()}
-                                    placeholderText="Click to select an available date"
-                                    className="book-date-input"
-                                />
-                                <div style={styles.selectArrow}>
-                                    <CalendarPlus size={18} />
+                            <label style={styles.label}>Contact Number</label>
+                            <input
+                                type="tel"
+                                value={contactNumber}
+                                onChange={(e) => setContactNumber(e.target.value)}
+                                placeholder="e.g. 09171234567"
+                                style={styles.inputBase}
+                            />
+                        </div>
+
+                        {/* Scheduled Date + Preferred Time (Side by Side) */}
+                        <div style={{ ...styles.formGroup, ...styles.twoColRow }}>
+                            <div style={styles.halfCol}>
+                                <label style={styles.label}>Scheduled Date</label>
+                                <div className="custom-datepicker-wrapper" style={{ position: 'relative' }}>
+                                    <DatePicker
+                                        selected={selectedDate}
+                                        onChange={(date) => setSelectedDate(date)}
+                                        excludeDates={blackoutDates}
+                                        minDate={new Date()}
+                                        placeholderText="Select a date"
+                                        className="book-date-input"
+                                    />
+                                    <div style={styles.selectArrow}>
+                                        <CalendarPlus size={18} />
+                                    </div>
+                                </div>
+                                <style>{`
+                                    .custom-datepicker-wrapper .react-datepicker-wrapper {
+                                        width: 100%;
+                                    }
+                                    .book-date-input {
+                                        width: 100%;
+                                        padding: 12px 40px 12px 16px;
+                                        border-radius: 10px;
+                                        border: 1px solid #e2e8f0;
+                                        background: #f8fafc;
+                                        color: #334155;
+                                        font-size: 0.95rem;
+                                        font-weight: 500;
+                                        outline: none;
+                                        box-sizing: border-box;
+                                        cursor: pointer;
+                                        transition: border-color 0.2s, box-shadow 0.2s;
+                                    }
+                                    .book-date-input:focus {
+                                        border-color: #10b981;
+                                        box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
+                                    }
+                                    .book-date-input::placeholder {
+                                        color: #94a3b8;
+                                    }
+                                    .react-datepicker {
+                                        font-family: inherit;
+                                        border: 1px solid #e2e8f0;
+                                        border-radius: 12px;
+                                        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                                        padding: 8px;
+                                    }
+                                    .react-datepicker__header {
+                                        background-color: white;
+                                        border-bottom: 1px solid #f1f5f9;
+                                    }
+                                    .react-datepicker__day--selected,
+                                    .react-datepicker__day--keyboard-selected {
+                                        background-color: #10b981 !important;
+                                        color: white !important;
+                                        border-radius: 8px;
+                                    }
+                                    .react-datepicker__day:hover {
+                                        border-radius: 8px;
+                                        background-color: #d1fae5;
+                                    }
+                                    .react-datepicker__day--excluded {
+                                        color: #cbd5e1 !important;
+                                        text-decoration: line-through;
+                                    }
+                                `}</style>
+                            </div>
+                            <div style={styles.halfCol}>
+                                <label style={styles.label}>Preferred Time</label>
+                                <div style={styles.selectWrap}>
+                                    <select
+                                        value={preferredTime}
+                                        onChange={(e) => setPreferredTime(e.target.value)}
+                                        style={{ ...styles.inputBase, appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
+                                    >
+                                        <option value="anytime">Anytime</option>
+                                        <option value="morning">Morning (8AM – 12PM)</option>
+                                        <option value="afternoon">Afternoon (1PM – 5PM)</option>
+                                    </select>
+                                    <div style={styles.selectArrow}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                    </div>
                                 </div>
                             </div>
-                            <style>{`
-                                .custom-datepicker-wrapper .react-datepicker-wrapper {
-                                    width: 100%;
-                                }
-                                .book-date-input {
-                                    width: 100%;
-                                    padding: 12px 40px 12px 16px;
-                                    border-radius: 10px;
-                                    border: 1px solid #e2e8f0;
-                                    background: #f8fafc;
-                                    color: #334155;
-                                    font-size: 0.95rem;
-                                    font-weight: 500;
-                                    outline: none;
-                                    box-sizing: border-box;
-                                    cursor: pointer;
-                                    transition: border-color 0.2s, box-shadow 0.2s;
-                                }
-                                .book-date-input:focus {
-                                    border-color: #10b981;
-                                    box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
-                                }
-                                .book-date-input::placeholder {
-                                    color: #94a3b8;
-                                }
-                                .react-datepicker {
-                                    font-family: inherit;
-                                    border: 1px solid #e2e8f0;
-                                    border-radius: 12px;
-                                    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-                                    padding: 8px;
-                                }
-                                .react-datepicker__header {
-                                    background-color: white;
-                                    border-bottom: 1px solid #f1f5f9;
-                                }
-                                .react-datepicker__day--selected,
-                                .react-datepicker__day--keyboard-selected {
-                                    background-color: #10b981 !important;
-                                    color: white !important;
-                                    border-radius: 8px;
-                                }
-                                .react-datepicker__day:hover {
-                                    border-radius: 8px;
-                                    background-color: #d1fae5;
-                                }
-                                .react-datepicker__day--excluded {
-                                    color: #cbd5e1 !important;
-                                    text-decoration: line-through;
-                                }
-                            `}</style>
+                        </div>
+
+                        {/* Service Address */}
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Service Address</label>
+                            <textarea
+                                value={serviceAddress}
+                                onChange={(e) => setServiceAddress(e.target.value)}
+                                rows={2}
+                                placeholder="Full address where the service will be performed"
+                                style={{ ...styles.inputBase, resize: 'none' }}
+                            />
                         </div>
 
                         {/* Notes */}
@@ -362,7 +421,7 @@ const BookService = () => {
                             <textarea
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                rows={4}
+                                rows={3}
                                 placeholder="Tell us more about what you need..."
                                 style={{ ...styles.inputBase, resize: 'none' }}
                             />

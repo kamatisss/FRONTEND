@@ -43,6 +43,33 @@ const StaffDashboard = () => {
 
     const pendingBookings = bookings.filter(b => b.status === 'Pending');
 
+    // parseNotes removed - fields are now properly separated by the backend
+
+    const formatTime = (timeKey) => {
+        const map = {
+            'anytime': 'Anytime',
+            'morning': 'Morning (8AM–12PM)',
+            'afternoon': 'Afternoon (1PM–5PM)',
+        };
+        return map[timeKey] || timeKey || '—';
+    };
+
+    const thStyle = {
+        padding: '16px 20px',
+        color: '#475569',
+        fontSize: '12px',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        borderBottom: '1px solid #e2e8f0',
+        fontWeight: '700',
+    };
+
+    const tdStyle = {
+        padding: '16px 20px',
+        borderBottom: '1px solid #f1f5f9',
+        verticalAlign: 'top',
+    };
+
     return (
         <div style={{ backgroundColor: '#f1f5f9', minHeight: '100%', padding: '40px', fontFamily: "'Inter', sans-serif" }}>
             <div style={{ 
@@ -72,42 +99,88 @@ const StaffDashboard = () => {
                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                 <thead>
                                     <tr style={{ background: '#f8fafc' }}>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>ID</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Customer</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Service</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Date</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Status</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Notes</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Actions</th>
+                                        <th style={thStyle}>ID</th>
+                                        <th style={thStyle}>Customer Info</th>
+                                        <th style={thStyle}>Service Details</th>
+                                        <th style={thStyle}>Schedule</th>
+                                        <th style={thStyle}>Status</th>
+                                        <th style={thStyle}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {pendingBookings.map(b => (
-                                        <tr key={b.id} style={{ background: '#ffffff', transition: 'background 0.2s' }}>
-                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9', fontWeight: '500' }}>{b.id}</td>
-                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9' }}>
-                                                <span style={{ fontWeight: '700', color: '#0f172a' }}>
-                                                    {b.customer_name || `User ${b.user}`} {b.customer_email ? `(${b.customer_email})` : ''}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9', textTransform: 'capitalize', fontWeight: '500' }}>{b.service_type}</td>
-                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9' }}>{b.scheduled_date}</td>
-                                            <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
-                                                <span style={{ background: '#fef3c7', color: '#b45309', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700' }}>{b.status}</span>
-                                            </td>
-                                            <td style={{ padding: '16px 24px', color: '#64748b', borderBottom: '1px solid #f1f5f9', fontSize: '14px', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.notes || '—'}</td>
-                                            <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button onClick={() => handleUpdateStatus(b.id, 'Confirmed')} style={{ padding: '8px 16px', cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#059669'} onMouseLeave={e => e.currentTarget.style.background = '#10b981'}>
-                                                        Confirm
-                                                    </button>
-                                                    <button onClick={() => handleUpdateStatus(b.id, 'Cancelled')} style={{ padding: '8px 16px', cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#dc2626'} onMouseLeave={e => e.currentTarget.style.background = '#ef4444'}>
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {pendingBookings.map(b => {
+                                        return (
+                                            <tr key={b.id} style={{ background: '#ffffff', transition: 'background 0.2s' }}>
+                                                {/* ID */}
+                                                <td style={{ ...tdStyle, fontWeight: '600', color: '#334155' }}>{b.id}</td>
+
+                                                {/* Customer Info: Name, Phone, Address stacked */}
+                                                <td style={tdStyle}>
+                                                    <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px', marginBottom: '4px' }}>
+                                                        {b.customer_name || `User ${b.user}`}
+                                                    </div>
+                                                    {b.contact_number && (
+                                                        <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2px' }}>
+                                                            📞 {b.contact_number}
+                                                        </div>
+                                                    )}
+                                                    {b.service_address && (
+                                                        <div style={{ fontSize: '12px', color: '#64748b', maxWidth: '180px', lineHeight: '1.4' }}>
+                                                            📍 {b.service_address}
+                                                        </div>
+                                                    )}
+                                                </td>
+
+                                                {/* Service Details: Type + Notes stacked */}
+                                                <td style={tdStyle}>
+                                                    <div style={{ fontWeight: '600', color: '#334155', textTransform: 'capitalize', fontSize: '14px', marginBottom: '4px' }}>
+                                                        {b.service_type}
+                                                    </div>
+                                                    {b.notes && (
+                                                        <div style={{
+                                                            fontSize: '12px',
+                                                            color: '#94a3b8',
+                                                            maxWidth: '180px',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                            title={b.notes}
+                                                        >
+                                                            {b.notes}
+                                                        </div>
+                                                    )}
+                                                </td>
+
+                                                {/* Schedule: Date + Time stacked */}
+                                                <td style={tdStyle}>
+                                                    <div style={{ fontWeight: '600', color: '#334155', fontSize: '14px', marginBottom: '4px' }}>
+                                                        {new Date(b.scheduled_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                    </div>
+                                                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                                                        🕐 {formatTime(b.preferred_time)}
+                                                    </div>
+                                                </td>
+
+                                                {/* Status Badge */}
+                                                <td style={tdStyle}>
+                                                    <span style={{ background: '#fef3c7', color: '#b45309', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700' }}>{b.status}</span>
+                                                </td>
+
+                                                {/* Actions */}
+                                                <td style={tdStyle}>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <button onClick={() => handleUpdateStatus(b.id, 'Confirmed')} style={{ padding: '8px 16px', cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#059669'} onMouseLeave={e => e.currentTarget.style.background = '#10b981'}>
+                                                            Confirm
+                                                        </button>
+                                                        <button onClick={() => handleUpdateStatus(b.id, 'Cancelled')} style={{ padding: '8px 16px', cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#dc2626'} onMouseLeave={e => e.currentTarget.style.background = '#ef4444'}>
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         )}

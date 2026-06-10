@@ -228,6 +228,7 @@ const AdminDashboard = () => {
                                         <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Customer</th>
                                         <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Contact Info</th>
                                         <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'right' }}>Total Price</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'center' }}>Payment</th>
                                         <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Date</th>
                                         <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Action</th>
                                     </tr>
@@ -243,6 +244,21 @@ const AdminDashboard = () => {
                                                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>{order.customer_address}</div>
                                                 </td>
                                                 <td style={{ padding: '16px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', fontWeight: '800', color: '#10b981', textAlign: 'right', fontSize: '16px' }}>₱{Number(order.total_price).toLocaleString()}</td>
+                                                <td style={{ padding: '16px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', textAlign: 'center' }}>
+                                                    {order.payment_method === 'cod' ? (
+                                                        <span style={{
+                                                            display: 'inline-block', padding: '4px 12px', borderRadius: 999,
+                                                            background: '#FEF3C7', color: '#92400E',
+                                                            fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em',
+                                                        }}>COD</span>
+                                                    ) : (
+                                                        <span style={{
+                                                            display: 'inline-block', padding: '4px 12px', borderRadius: 999,
+                                                            background: '#D1FAE5', color: '#065F46',
+                                                            fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em',
+                                                        }}>Paid Online</span>
+                                                    )}
+                                                </td>
                                                 <td style={{ padding: '16px 24px', color: '#64748b', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9' }}>{new Date(order.created_at).toLocaleDateString()}</td>
                                                 <td style={{ padding: '16px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9' }}>
                                                     <button 
@@ -272,7 +288,7 @@ const AdminDashboard = () => {
                                             {/* Expanded Details Row */}
                                             {expandedOrder === order.id && (
                                                 <tr style={{ background: '#f8fafc' }}>
-                                                    <td colSpan="6" style={{ padding: '0 24px 24px 24px', borderBottom: '1px solid #e2e8f0' }}>
+                                                    <td colSpan="7" style={{ padding: '0 24px 24px 24px', borderBottom: '1px solid #e2e8f0' }}>
                                                         <div style={{ background: '#ffffff', borderRadius: '8px', padding: '16px', border: '1px solid #e2e8f0', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)' }}>
                                                             <h4 style={{ color: '#475569', margin: '0 0 12px 0', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Ordered Items</h4>
                                                             <ul style={{ margin: 0, paddingLeft: '20px', color: '#334155', fontSize: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '10px' }}>

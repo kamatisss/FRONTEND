@@ -13,6 +13,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import ManageAvailability from "./components/ManageAvailability";
 import BookService from "./components/BookService";
 import MyBookings from "./components/MyBookings";
+import UserOrders from "./components/UserOrders";
 import OrderSuccess from "./components/OrderSuccess";
 import LandingPage from "./components/LandingPage";
 import ForgotPassword from "./components/ForgotPassword";
@@ -77,6 +78,18 @@ function App() {
                   <RoleProtectedRoute allowedRoles={['user']}>
                     <DashboardLayout>
                       <MyBookings />
+                    </DashboardLayout>
+                  </RoleProtectedRoute>
+                }
+              />
+
+              {/* My Orders (User) */}
+              <Route
+                path="/my-orders"
+                element={
+                  <RoleProtectedRoute allowedRoles={['user']}>
+                    <DashboardLayout>
+                      <UserOrders />
                     </DashboardLayout>
                   </RoleProtectedRoute>
                 }

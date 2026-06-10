@@ -39,15 +39,13 @@ export const AuthProvider = ({ children }) => {
       setUser(decodedUser);
       localStorage.setItem('authTokens', JSON.stringify(data));
 
-      // Redirect: honour the intended path first, then fall back to role-based route
-      if (redirectPath) {
-        navigate(redirectPath, { replace: true });
-      } else if (decodedUser.is_superuser) {
+      // Redirect strictly based on role to prevent Admins from getting stuck on client pages
+      if (decodedUser.is_superuser) {
         navigate('/admin-dashboard', { replace: true });
       } else if (decodedUser.is_staff) {
         navigate('/staff-dashboard', { replace: true });
       } else {
-        navigate('/user-dashboard', { replace: true });
+        navigate('/studio', { replace: true });
       }
     } else {
       throw new Error(data.detail || 'Invalid credentials. Please try again.');

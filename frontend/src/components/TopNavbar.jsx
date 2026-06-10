@@ -83,6 +83,12 @@ const TopNavbar = () => {
                                 <span className="hidden md:inline">My Bookings</span>
                             </NavLink>
                         </li>
+                        <li>
+                            <NavLink to="/my-orders" className={navLinkClass}>
+                                <Archive size={18} className="md:mr-2" />
+                                <span className="hidden md:inline">My Orders</span>
+                            </NavLink>
+                        </li>
                     </>
                 )}
             </ul>
