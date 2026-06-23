@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useDesign } from '../context/DesignContext';
 import { saveDesign, listDesigns, loadDesign, deleteDesign, submitDesign } from '../services/api';
 import {
-  Save, FolderOpen, Sparkles, X, Loader, HardDrive, Send
+  Save, FolderOpen, Sparkles, X, Loader, HardDrive, Send, Trash2
 } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -28,13 +29,14 @@ const T = {
   },
   /* Modal */
   overlay: {
-    position: 'fixed', inset: 0, zIndex: 100,
-    background: 'rgba(17,24,39,0.5)', backdropFilter: 'blur(8px)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    position: 'fixed', inset: 0, zIndex: 40,
+    background: 'rgba(17,24,39,0.4)', backdropFilter: 'blur(4px)',
+    display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '80px 16px 16px 16px',
   },
   modal: {
     background: '#fff', borderRadius: 20, width: '100%', maxWidth: 440,
     boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '1px solid #E5E7EB', overflow: 'hidden',
+    marginTop: '8px',
   },
   modalHeader: {
     padding: '20px 32px', borderBottom: '1px solid #E5E7EB',
@@ -54,7 +56,7 @@ const T = {
   },
   modalBody: { padding: 24, maxHeight: 400, overflowY: 'auto' },
   loadingText: { textAlign: 'center', padding: '32px 0', color: '#9CA3AF', fontWeight: 500 },
-  emptyText: { textAlign: 'center', padding: '48px 0', color: '#9CA3AF', fontStyle: 'italic' },
+  emptyText: { textAlign: 'center', padding: '64px 24px', color: '#9CA3AF', fontStyle: 'italic', lineHeight: 1.5 },
   designRow: {
     padding: 16, borderRadius: 12, background: '#F9FAFB', marginBottom: 12,
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -113,11 +115,39 @@ const T = {
 
 export default function SaveLoadPanel({ toolbarVariant }) {
   const { state, dispatch, totalCost } = useDesign();
-  const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loadingList, setLoadingList] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingList, setLoadingList] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (!showModal) return;
+    
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowModal(false);
+      }
+    };
+
+    const handleOutsideClick = (e) => {
+      const modalEl = document.getElementById('saved-designs-modal');
+      if (modalEl && !modalEl.contains(e.target)) {
+        setShowModal(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+    }, 0);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleOutsideClick);
+      clearTimeout(timeoutId);
+    };
+  }, [showModal]);
 
   const handleSubmitForReview = async () => {
     if (!state.designId) {
@@ -165,7 +195,7 @@ export default function SaveLoadPanel({ toolbarVariant }) {
         placed_items: state.placedItems.map(item => ({
           product_id: item.productId,
           name: item.name,
-          model_type: item.model_type,
+          model_type: item.modelType || item.model_type || null,
           price: item.price,
           position: item.position,
           rotation: item.rotation,
@@ -237,48 +267,63 @@ export default function SaveLoadPanel({ toolbarVariant }) {
   };
 
   /* ── Load Modal (shared between variants) ── */
-  const loadModal = showModal ? (
+  const loadModal = showModal ? createPortal(
     <div style={T.overlay} onClick={() => setShowModal(false)}>
-      <div style={T.modal} onClick={e => e.stopPropagation()}>
-        <div style={T.modalHeader}>
-          <h3 style={T.modalTitle}>
-            <div style={T.modalTitleIcon}><FolderOpen size={20} /></div>
-            Saved Designs
-          </h3>
-          <button onClick={() => setShowModal(false)} style={T.modalCloseBtn}>
-            <X size={20} />
-          </button>
-        </div>
-        <div style={T.modalBody}>
-          {loadingList && <p style={T.loadingText}>Loading designs...</p>}
-          {!loadingList && state.savedDesigns.length === 0 && (
-            <p style={T.emptyText}>No saved designs found.</p>
-          )}
-          {state.savedDesigns.map(d => (
-            <div key={d.id} style={T.designRow}
-              onMouseEnter={e => e.currentTarget.style.background = '#F0FDF4'}
-              onMouseLeave={e => e.currentTarget.style.background = '#F9FAFB'}>
-              <div>
-                <p style={T.designName}>{d.name || 'Untitled'}</p>
-                <p style={T.designMeta}>₱{Number(d.total_cost).toLocaleString()} · {new Date(d.updated_at).toLocaleDateString()}</p>
+      <div id="saved-designs-modal" style={T.modal} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex justify-between items-center border-b pb-2 mb-2">
+            <span className="text-sm font-semibold text-gray-700">Saved Designs</span>
+            <button 
+              onClick={() => setShowModal(false)} 
+              className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+              style={{
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <div style={{ ...T.modalBody, padding: 0 }}>
+            {loadingList && <p style={T.loadingText}>Loading designs...</p>}
+            {!loadingList && state.savedDesigns.length === 0 && (
+              <p style={T.emptyText}>No saved designs found.</p>
+            )}
+            {state.savedDesigns.map(d => (
+              <div key={d.id} style={T.designRow}
+                onMouseEnter={e => e.currentTarget.style.background = '#F0FDF4'}
+                onMouseLeave={e => e.currentTarget.style.background = '#F9FAFB'}>
+                <div>
+                  <p style={T.designName}>{d.name || 'Untitled'}</p>
+                  <p style={T.designMeta}>₱{Number(d.total_cost).toLocaleString()} · {new Date(d.updated_at).toLocaleDateString()}</p>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => handleLoad(d.id)} style={T.openBtn}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.background = '#F0FDF4'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.background = '#fff'; }}>
+                    Open
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(d.id)} 
+                    style={T.deleteBtn}
+                    title="Delete Design"
+                    onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#D1D5DB'}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => handleLoad(d.id)} style={T.openBtn}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.background = '#F0FDF4'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.background = '#fff'; }}>
-                  Open
-                </button>
-                <button onClick={() => handleDelete(d.id)} style={T.deleteBtn}
-                  onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#D1D5DB'}>
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   ) : null;
 
   /* ══════════════════════════════════════════════════════════════

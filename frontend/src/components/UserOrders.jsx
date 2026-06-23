@@ -78,9 +78,22 @@ const UserOrders = () => {
             letterSpacing: '0.03em',
             textTransform: 'uppercase',
         };
-        if (status === 'Paid') return { ...base, background: '#D1FAE5', color: '#065F46' };
-        if (status === 'Pending') return { ...base, background: '#FEF3C7', color: '#92400E' };
-        return { ...base, background: '#DBEAFE', color: '#1E40AF' };
+        switch (status) {
+            case 'Pending':
+                return { ...base, background: '#FEF3C7', color: '#92400E' };
+            case 'Paid':
+                return { ...base, background: '#D1FAE5', color: '#065F46' };
+            case 'Shipped':
+                return { ...base, background: '#DBEAFE', color: '#1E40AF' };
+            case 'Out for Delivery':
+                return { ...base, background: '#E0F2FE', color: '#0369A1' };
+            case 'Delivered':
+                return { ...base, background: '#D1FAE5', color: '#065F46' };
+            case 'Cancelled':
+                return { ...base, background: '#FEE2E2', color: '#B91C1C' };
+            default:
+                return { ...base, background: '#F1F5F9', color: '#475569' };
+        }
     };
 
     /* ── Loading State ── */

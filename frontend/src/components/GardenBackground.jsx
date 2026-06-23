@@ -43,7 +43,8 @@ const GardenBackground = forwardRef(function GardenBackground(
 
   // ── Texture Loading ────────────────────────────────────────────────
   useEffect(() => {
-    if (!originalImageUrl || !depthMapUrl) return;
+    const colorUrl = originalImageUrl || '/default_garden.jpg';
+    const depthUrl = depthMapUrl || '/default_depth.png';
 
     const loader = new THREE.TextureLoader();
 
@@ -85,8 +86,8 @@ const GardenBackground = forwardRef(function GardenBackground(
       });
 
     Promise.all([
-      loadTex(originalImageUrl, [100, 130, 80]),         // color map
-      loadTex(depthMapUrl,      [128, 128, 128]),         // MiDaS depth (displacement)
+      loadTex(colorUrl, [100, 130, 80]),         // color map
+      loadTex(depthUrl,      [128, 128, 128]),         // MiDaS depth (displacement)
       loadTex(normalMapUrl,     [128, 128, 255]),         // MiDaS normal from backend
       loadTex('/textures/grass_normal.jpg', [128, 128, 255], GRASS_NORMAL_REPEAT), // seamless grass detail
     ]).then(([colorMap, depthMap, backendNormal, grassNormal]) => {

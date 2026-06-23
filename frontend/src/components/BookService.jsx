@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { useAuth } from '../context/AuthContext';
-import { CalendarPlus, CheckCircle2, Clock, CalendarCheck, AlertCircle } from 'lucide-react';
+import { CalendarPlus, CheckCircle2, Clock, CalendarCheck, AlertCircle, MapPin } from 'lucide-react';
 
 const BookService = () => {
     const { authTokens } = useAuth();
@@ -15,6 +15,10 @@ const BookService = () => {
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    const [locating, setLocating] = useState(false);
+    const [locatingError, setLocatingError] = useState('');
+    const [designs, setDesigns] = useState([]);
+    const [selectedDesignId, setSelectedDesignId] = useState('');
 
     useEffect(() => {
         const fetchBlackoutDates = async () => {
@@ -28,6 +32,86 @@ const BookService = () => {
         };
         fetchBlackoutDates();
     }, []);
+
+    useEffect(() => {
+        const fetchDesigns = async () => {
+            if (!authTokens) return;
+            try {
+                const res = await fetch('http://localhost:8000/api/designs/', {
+                    headers: {
+                        'Authorization': `Bearer ${authTokens.access}`
+                    }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setDesigns(data);
+                }
+            } catch (error) {
+                console.error('Error fetching designs:', error);
+            }
+        };
+        fetchDesigns();
+    }, [authTokens]);
+
+    const handleLocate = () => {
+        setLocating(true);
+        setLocatingError("");
+
+        if (!navigator.geolocation) {
+            setLocatingError("Could not get location. Geolocation is not supported by your device browser. Please type your address.");
+            setLocating(false);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'User-Agent': 'GardenStudio-App/1.0'
+                        }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.display_name) {
+                            setServiceAddress(data.display_name);
+                        } else {
+                            setLocatingError("Could not get location. Please type your address.");
+                        }
+                    } else {
+                        setLocatingError("Could not get location. Please type your address.");
+                    }
+                } catch (err) {
+                    console.error("Reverse geocoding failed:", err);
+                    setLocatingError("Could not get location. Please type your address.");
+                } finally {
+                    setLocating(false);
+                }
+            },
+            (err) => {
+                let errorDetails = "";
+                if (err.code === err.PERMISSION_DENIED) {
+                    errorDetails = "Location permission denied. Please allow GPS access.";
+                } else if (err.code === err.POSITION_UNAVAILABLE) {
+                    errorDetails = "Location unavailable. Ensure GPS/Wi-Fi is on.";
+                } else if (err.code === err.TIMEOUT) {
+                    errorDetails = "Location request timed out. Please try again.";
+                }
+                const finalMsg = errorDetails
+                    ? `Could not get location. ${errorDetails} Please type your address.`
+                    : "Could not get location. Please type your address.";
+                setLocatingError(finalMsg);
+                setLocating(false);
+                setTimeout(() => {
+                    setLocatingError("");
+                }, 5000);
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -56,7 +140,8 @@ const BookService = () => {
                     contact_number: contactNumber,
                     preferred_time: preferredTime,
                     service_address: serviceAddress,
-                    notes: notes
+                    notes: notes,
+                    design: selectedDesignId ? parseInt(selectedDesignId, 10) : null
                 })
             });
 
@@ -67,6 +152,7 @@ const BookService = () => {
                 setServiceAddress('');
                 setPreferredTime('anytime');
                 setNotes('');
+                setSelectedDesignId('');
             } else {
                 const data = await res.json();
                 setMessage('Error: ' + JSON.stringify(data));
@@ -81,13 +167,15 @@ const BookService = () => {
     /* Inline style objects -- guarantees rendering regardless of Tailwind JIT */
     const styles = {
         page: {
-            minHeight: 'calc(100vh - 64px)',
+            minHeight: '100vh',
             background: '#F3F4F6',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
-            padding: '2rem',
+            padding: '6rem 2rem 5rem 2rem',
             fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+            boxSizing: 'border-box',
+            overflowY: 'auto',
         },
         card: {
             width: '100%',
@@ -102,7 +190,7 @@ const BookService = () => {
         },
         leftCol: {
             width: '55%',
-            padding: '3rem',
+            padding: '3rem 3rem 80px 3rem',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
@@ -185,7 +273,8 @@ const BookService = () => {
             fontSize: '1rem',
             fontWeight: 700,
             cursor: 'pointer',
-            marginTop: '1.5rem',
+            marginTop: '2rem',
+            marginBottom: '1rem',
             boxShadow: '0 4px 14px rgba(16,185,129,0.3)',
             transition: 'background 0.2s, transform 0.15s',
         },
@@ -382,6 +471,10 @@ const BookService = () => {
                                         color: #cbd5e1 !important;
                                         text-decoration: line-through;
                                     }
+                                    @keyframes spin {
+                                        from { transform: rotate(0deg); }
+                                        to { transform: rotate(360deg); }
+                                    }
                                 `}</style>
                             </div>
                             <div style={styles.halfCol}>
@@ -405,14 +498,50 @@ const BookService = () => {
 
                         {/* Service Address */}
                         <div style={styles.formGroup}>
-                            <label style={styles.label}>Service Address</label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <label style={{ ...styles.label, margin: 0 }}>Service Address</label>
+                                <button
+                                    type="button"
+                                    onClick={handleLocate}
+                                    disabled={locating}
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        color: locating ? '#94a3b8' : '#10b981',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: locating ? 'not-allowed' : 'pointer',
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        transition: 'background 0.2s',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.03em',
+                                    }}
+                                    onMouseEnter={(e) => { if (!locating) e.currentTarget.style.background = '#f0fdf4'; }}
+                                    onMouseLeave={(e) => { if (!locating) e.currentTarget.style.background = 'none'; }}
+                                >
+                                    <MapPin size={12} style={{ animation: locating ? 'spin 1.5s linear infinite' : 'none' }} />
+                                    {locating ? 'Locating...' : 'Use Current Location'}
+                                </button>
+                            </div>
                             <textarea
                                 value={serviceAddress}
-                                onChange={(e) => setServiceAddress(e.target.value)}
+                                onChange={(e) => {
+                                    setServiceAddress(e.target.value);
+                                    setLocatingError("");
+                                }}
                                 rows={2}
                                 placeholder="Full address where the service will be performed"
                                 style={{ ...styles.inputBase, resize: 'none' }}
                             />
+                            {locatingError && (
+                                <p style={{ fontSize: '0.75rem', color: '#ef4444', margin: '4px 0 0 0', fontWeight: 600 }}>
+                                    {locatingError}
+                                </p>
+                            )}
                         </div>
 
                         {/* Notes */}
@@ -425,6 +554,34 @@ const BookService = () => {
                                 placeholder="Tell us more about what you need..."
                                 style={{ ...styles.inputBase, resize: 'none' }}
                             />
+                        </div>
+
+                        {/* Attach a Saved 3D Design (Optional) */}
+                        <div style={styles.formGroup}>
+                            <label style={styles.label}>Attach a Saved 3D Design (Optional)</label>
+                            {designs.length > 0 ? (
+                                <div style={styles.selectWrap}>
+                                    <select
+                                        value={selectedDesignId}
+                                        onChange={(e) => setSelectedDesignId(e.target.value)}
+                                        style={{ ...styles.inputBase, appearance: 'none', cursor: 'pointer', paddingRight: '40px' }}
+                                    >
+                                        <option value="">-- Select a saved design --</option>
+                                        {designs.map((design) => (
+                                            <option key={design.id} value={design.id}>
+                                                {design.name || `Design #${design.id}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div style={styles.selectArrow}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: 0, padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', lineHeight: 1.5 }}>
+                                    No saved designs found. You can create one in the <a href="/studio" style={{ color: '#10b981', fontWeight: 600, textDecoration: 'none' }}>My 3D Studio</a> link above before booking.
+                                </p>
+                            )}
                         </div>
 
                         {/* Submit Button */}

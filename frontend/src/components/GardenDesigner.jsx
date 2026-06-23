@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 import { useDesign } from '../context/DesignContext';
-import { generateDepthMap } from '../services/api';
+import { generateDepthMap, getInventoryItems, loadDesign } from '../services/api';
 import GardenBackground from './GardenBackground';
 import PlacedObject from './PlacedObject';
 import AssetLibrarySidebar from './AssetLibrarySidebar';
@@ -290,6 +290,66 @@ const PlantIcon = () => (
 export default function GardenDesigner() {
   const { state, dispatch } = useDesign();
   const [openDrawer, setOpenDrawer] = useState(null);
+
+  // Fetch live inventory items/products so placed objects can lookup model paths
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const data = await getInventoryItems();
+        dispatch({ type: 'SET_PRODUCTS', payload: data });
+      } catch (err) {
+        console.error('Failed to load inventory items:', err);
+      }
+    }
+    if (state.products.length === 0) {
+      fetchProducts();
+    }
+  }, [state.products.length, dispatch]);
+
+  // Load design from query parameter if present
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const designIdParam = params.get('design_id');
+    if (designIdParam) {
+      const designId = parseInt(designIdParam, 10);
+      if (designId && designId !== state.designId) {
+        const autoLoadDesign = async () => {
+          try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            const design = await loadDesign(designId);
+            dispatch({
+              type: 'LOAD_DESIGN',
+              payload: {
+                designId: design.id,
+                designName: design.name,
+                depthData: design.depth_data,
+                originalImageUrl: design.original_image_url || '',
+                placedItems: (design.placed_items || []).map((item, idx) => ({
+                  id: Date.now() + idx,
+                  productId: item.product_id,
+                  name: item.name,
+                  modelType: item.model_type || item.modelType,
+                  price: item.price,
+                  position: item.position || { x: 0, y: 0, z: 0 },
+                  rotation: item.rotation || { x: 0, y: 0, z: 0 },
+                  scale: item.scale || { x: 1, y: 1, z: 1 }
+                })),
+                dimensions: design.dimensions || { width: 10, length: 15, terrainType: 'flat' },
+                terrainHeight: design.terrain_height || 1.5,
+                timeOfDay: design.time_of_day || 14
+              }
+            });
+          } catch (err) {
+            console.error('Auto-load design failed:', err);
+            dispatch({ type: 'SET_ERROR', payload: 'Failed to auto-load design: ' + err.message });
+          } finally {
+            dispatch({ type: 'SET_LOADING', payload: false });
+          }
+        };
+        autoLoadDesign();
+      }
+    }
+  }, [state.designId, dispatch]);
 
   const formattedTime = useMemo(() => {
     const hours = Math.floor(state.timeOfDay);
@@ -576,18 +636,16 @@ export default function GardenDesigner() {
               <Environment preset="park" background={false} />
 
               <Suspense fallback={null}>
-                {state.depthData && state.originalImageUrl && (
-                  <GardenBackground
-                    ref={terrainRef}
-                    originalImageUrl={state.originalImageUrl}
-                    depthMapUrl={getMediaUrl(state.depthData.depth_map_url)}
-                    normalMapUrl={getMediaUrl(state.depthData.normal_map_url)}
-                    rockMaskUrl={getMediaUrl(state.depthData.rock_mask_url)}
-                    grassMaskUrl={getMediaUrl(state.depthData.grass_mask_url)}
-                    displacementScale={terrainDepth}
-                    onTerrainClick={handleTerrainClick}
-                  />
-                )}
+                <GardenBackground
+                  ref={terrainRef}
+                  originalImageUrl={state.originalImageUrl}
+                  depthMapUrl={state.depthData ? getMediaUrl(state.depthData.depth_map_url) : null}
+                  normalMapUrl={state.depthData ? getMediaUrl(state.depthData.normal_map_url) : null}
+                  rockMaskUrl={state.depthData ? getMediaUrl(state.depthData.rock_mask_url) : null}
+                  grassMaskUrl={state.depthData ? getMediaUrl(state.depthData.grass_mask_url) : null}
+                  displacementScale={terrainDepth}
+                  onTerrainClick={handleTerrainClick}
+                />
                 {state.placedItems.map(item => (
                   item.id === state.editingItemId ? null : (
                     <PlacedObject key={item.id} item={item} orbitControlsRef={orbitRef} />

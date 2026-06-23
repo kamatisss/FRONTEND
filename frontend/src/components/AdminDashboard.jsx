@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDesign } from '../context/DesignContext';
 import { loadDesign } from '../services/api';
-import { Shield, ChevronDown, ChevronUp, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { Shield, ChevronDown, ChevronUp, Eye, CheckCircle, XCircle, TrendingUp, ShoppingBag, Clock, Percent, MapPin, ExternalLink, Image } from 'lucide-react';
 
 const AdminDashboard = () => {
     const { authTokens } = useAuth();
@@ -11,6 +11,8 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
     const [designs, setDesigns] = useState([]);
     const [orders, setOrders] = useState([]);
+    const [attendanceLogs, setAttendanceLogs] = useState([]);
+    const [selectedAttendance, setSelectedAttendance] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('designs');
@@ -43,8 +45,21 @@ const AdminDashboard = () => {
             }
         };
 
+        const fetchAttendanceLogs = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/attendance/', {
+                    headers: { 'Authorization': `Bearer ${authTokens.access}` }
+                });
+                if (!response.ok) throw new Error('Failed to fetch attendance logs');
+                const data = await response.json();
+                setAttendanceLogs(data);
+            } catch (err) {
+                console.error('Failed to fetch attendance logs:', err);
+            }
+        };
+
         if (authTokens) {
-            Promise.all([fetchSubmittedDesigns(), fetchOrders()]).finally(() => setLoading(false));
+            Promise.all([fetchSubmittedDesigns(), fetchOrders(), fetchAttendanceLogs()]).finally(() => setLoading(false));
         }
     }, [authTokens]);
 
@@ -105,6 +120,13 @@ const AdminDashboard = () => {
             setExpandedOrder(orderId);
         }
     };
+    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total_price || 0), 0);
+    const totalOrdersCount = orders.length;
+    const pendingDesignsCount = designs.length;
+
+    const codCount = orders.filter(order => order.payment_method === 'cod').length;
+    const codPercentage = totalOrdersCount > 0 ? Math.round((codCount / totalOrdersCount) * 100) : 0;
+    const onlinePercentage = totalOrdersCount > 0 ? 100 - codPercentage : 0;
 
     return (
         <div style={{ backgroundColor: '#f1f5f9', minHeight: '100%', padding: '40px', fontFamily: "'Inter', sans-serif" }}>
@@ -127,6 +149,139 @@ const AdminDashboard = () => {
                     <div>
                         <h1 style={{ color: '#1e293b', fontSize: '28px', margin: '0 0 4px 0', fontWeight: '800' }}>Admin Dashboard</h1>
                         <p style={{ color: '#64748b', margin: 0, fontSize: '15px' }}>Review submitted garden designs</p>
+                    </div>
+                </div>
+
+                {/* Analytics Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6" style={{ marginBottom: '32px' }}>
+                    {/* Total Revenue */}
+                    <div 
+                        style={{
+                            backgroundColor: '#ffffff',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            border: '1px solid #e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+                            transition: 'all 0.2s ease-in-out',
+                            cursor: 'default'
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
+                        }}
+                    >
+                        <div>
+                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Revenue</p>
+                            <h3 style={{ color: '#10b981', fontSize: '24px', fontWeight: '800', margin: 0 }}>₱{totalRevenue.toLocaleString()}</h3>
+                        </div>
+                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
+                            <TrendingUp size={24} color="#10b981" />
+                        </div>
+                    </div>
+
+                    {/* Total Orders */}
+                    <div 
+                        style={{
+                            backgroundColor: '#ffffff',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            border: '1px solid #e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+                            transition: 'all 0.2s ease-in-out',
+                            cursor: 'default'
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
+                        }}
+                    >
+                        <div>
+                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Orders</p>
+                            <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{totalOrdersCount}</h3>
+                        </div>
+                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
+                            <ShoppingBag size={24} color="#10b981" />
+                        </div>
+                    </div>
+
+                    {/* Pending Designs */}
+                    <div 
+                        style={{
+                            backgroundColor: '#ffffff',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            border: '1px solid #e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+                            transition: 'all 0.2s ease-in-out',
+                            cursor: 'default'
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
+                        }}
+                    >
+                        <div>
+                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pending Designs</p>
+                            <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{pendingDesignsCount}</h3>
+                        </div>
+                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
+                            <Clock size={24} color="#10b981" />
+                        </div>
+                    </div>
+
+                    {/* COD vs Online */}
+                    <div 
+                        style={{
+                            backgroundColor: '#ffffff',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            border: '1px solid #e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+                            transition: 'all 0.2s ease-in-out',
+                            cursor: 'default'
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
+                        }}
+                    >
+                        <div>
+                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>COD vs Online</p>
+                            <h3 style={{ color: '#1e293b', fontSize: '20px', fontWeight: '800', margin: 0 }}>
+                                {codPercentage}% <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>vs</span> {onlinePercentage}%
+                            </h3>
+                        </div>
+                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
+                            <Percent size={24} color="#10b981" />
+                        </div>
                     </div>
                 </div>
 
@@ -165,6 +320,23 @@ const AdminDashboard = () => {
                         }}
                     >
                         Customer Orders
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('attendance')} 
+                        style={{ 
+                            padding: '12px 24px', 
+                            cursor: 'pointer', 
+                            background: activeTab === 'attendance' ? '#10b981' : '#f1f5f9', 
+                            color: activeTab === 'attendance' ? 'white' : '#475569', 
+                            border: 'none', 
+                            borderRadius: '8px', 
+                            fontWeight: '700',
+                            fontSize: '15px',
+                            transition: 'all 0.2s',
+                            boxShadow: activeTab === 'attendance' ? '0 4px 14px rgba(16,185,129,0.3)' : 'none'
+                        }}
+                    >
+                        Attendance Tracking
                     </button>
                 </div>
 
@@ -309,7 +481,261 @@ const AdminDashboard = () => {
                         )}
                     </div>
                 )}
+
+                {/* Attendance Tracking Table */}
+                {!loading && !error && activeTab === 'attendance' && (
+                    <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                        {attendanceLogs.length === 0 ? (
+                            <p style={{ padding: '32px', color: '#64748b', textAlign: 'center', margin: 0 }}>No attendance logs recorded yet.</p>
+                        ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr style={{ background: '#f8fafc' }}>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Staff Name</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Date</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Booking/Project ID</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Time In</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Time Out</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Total Hours</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {attendanceLogs.map((log) => (
+                                        <tr key={log.id} style={{ background: '#ffffff', transition: 'background 0.2s' }}>
+                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{log.staff_name}</td>
+                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9' }}>{log.clock_in_time ? new Date(log.clock_in_time).toLocaleDateString() : '-'}</td>
+                                            <td style={{ padding: '16px 24px', color: '#64748b', borderBottom: '1px solid #f1f5f9', fontWeight: '500' }}>
+                                                {log.booking ? `#${log.booking}` : 'General'}
+                                            </td>
+                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9' }}>
+                                                {log.clock_in_time ? new Date(log.clock_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                            </td>
+                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9' }}>
+                                                {log.clock_out_time ? new Date(log.clock_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : <span style={{ color: '#f59e0b', fontWeight: '600' }}>Active Shift</span>}
+                                            </td>
+                                            <td style={{ padding: '16px 24px', color: '#10b981', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>
+                                                {log.total_hours !== null ? `${log.total_hours} hrs` : '-'}
+                                            </td>
+                                            <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
+                                                <button 
+                                                    onClick={() => setSelectedAttendance(log)}
+                                                    style={{ 
+                                                        padding: '6px 12px', 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '6px', 
+                                                        cursor: 'pointer', 
+                                                        background: '#ffffff', 
+                                                        color: '#10b981', 
+                                                        border: '1px solid #a7f3d0', 
+                                                        borderRadius: '6px', 
+                                                        fontWeight: '600', 
+                                                        fontSize: '13px',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
+                                                    onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
+                                                >
+                                                    <Eye size={14} /> View Proof
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                )}
             </div>
+
+            {/* View Proof Modal Overlay */}
+            {selectedAttendance && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    padding: '20px'
+                }}>
+                    <div style={{
+                        backgroundColor: '#ffffff',
+                        borderRadius: '16px',
+                        width: '100%',
+                        maxWidth: '650px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        padding: '24px',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                            <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#1e293b' }}>
+                                Shift Proof Verification
+                            </h3>
+                            <button 
+                                onClick={() => setSelectedAttendance(null)}
+                                style={{
+                                    border: 'none',
+                                    background: 'none',
+                                    fontSize: '24px',
+                                    cursor: 'pointer',
+                                    color: '#94a3b8'
+                                }}
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* Shift Details Grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#f8fafc', padding: '16px', borderRadius: '12px', fontSize: '14px', border: '1px solid #e2e8f0' }}>
+                                <div>
+                                    <strong style={{ color: '#475569' }}>Staff Member:</strong>
+                                    <div style={{ color: '#1e293b', fontWeight: '600', marginTop: '4px' }}>{selectedAttendance.staff_name}</div>
+                                </div>
+                                <div>
+                                    <strong style={{ color: '#475569' }}>Booking Ref:</strong>
+                                    <div style={{ color: '#1e293b', fontWeight: '600', marginTop: '4px' }}>{selectedAttendance.booking_label}</div>
+                                </div>
+                                <div>
+                                    <strong style={{ color: '#475569' }}>Clock In:</strong>
+                                    <div style={{ color: '#1e293b', fontWeight: '600', marginTop: '4px' }}>
+                                        {selectedAttendance.clock_in_time ? new Date(selectedAttendance.clock_in_time).toLocaleString() : '-'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <strong style={{ color: '#475569' }}>Clock Out:</strong>
+                                    <div style={{ color: '#1e293b', fontWeight: '600', marginTop: '4px' }}>
+                                        {selectedAttendance.clock_out_time ? new Date(selectedAttendance.clock_out_time).toLocaleString() : 'Active Session'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Photo Proofs Container */}
+                            <div>
+                                <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Image Proof of Presence</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', background: '#f8fafc' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textAlign: 'center' }}>CLOCK-IN PHOTO</div>
+                                        {selectedAttendance.clock_in_photo_url ? (
+                                            <img 
+                                                src={selectedAttendance.clock_in_photo_url.startsWith('http') ? selectedAttendance.clock_in_photo_url : `http://localhost:8000${selectedAttendance.clock_in_photo_url}`} 
+                                                alt="Clock In Proof" 
+                                                style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px' }}
+                                            />
+                                        ) : (
+                                            <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                                                No Clock-in Photo
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', background: '#f8fafc' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textAlign: 'center' }}>CLOCK-OUT PHOTO</div>
+                                        {selectedAttendance.clock_out_photo_url ? (
+                                            <img 
+                                                src={selectedAttendance.clock_out_photo_url.startsWith('http') ? selectedAttendance.clock_out_photo_url : `http://localhost:8000${selectedAttendance.clock_out_photo_url}`} 
+                                                alt="Clock Out Proof" 
+                                                style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px' }}
+                                            />
+                                        ) : (
+                                            <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                                                No Clock-out Photo
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* GIS Location Details */}
+                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', background: '#f0fdf4', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '700', color: '#065f46' }}>
+                                        GIS Coordinates Tracking
+                                    </h4>
+                                    {selectedAttendance.latitude && selectedAttendance.longitude ? (
+                                        <>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#047857' }}>
+                                                Latitude: {selectedAttendance.latitude.toFixed(6)}, Longitude: {selectedAttendance.longitude.toFixed(6)}
+                                            </p>
+                                            {selectedAttendance.clock_in_address && (
+                                                <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#1e293b', wordBreak: 'break-word', lineHeight: 1.4 }}>
+                                                    <span style={{ fontWeight: '600', color: '#047857' }}>Clock-in Address:</span> {selectedAttendance.clock_in_address}
+                                                </p>
+                                            )}
+                                            {selectedAttendance.clock_out_address && (
+                                                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#1e293b', wordBreak: 'break-word', lineHeight: 1.4 }}>
+                                                    <span style={{ fontWeight: '600', color: '#047857' }}>Clock-out Address:</span> {selectedAttendance.clock_out_address}
+                                                </p>
+                                            )}
+                                            {!selectedAttendance.clock_in_address && !selectedAttendance.clock_out_address && (
+                                                <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>
+                                                    Address not recorded
+                                                </p>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <p style={{ margin: 0, fontSize: '13px', color: '#b91c1c' }}>
+                                            No GIS coordinates tracked for this shift log.
+                                        </p>
+                                    )}
+                                </div>
+                                {selectedAttendance.latitude && selectedAttendance.longitude && (
+                                    <a 
+                                        href={`https://www.google.com/maps/search/?api=1&query=${selectedAttendance.latitude},${selectedAttendance.longitude}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            marginLeft: 'auto',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            padding: '8px 16px',
+                                            background: '#10b981',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            fontWeight: '700',
+                                            fontSize: '13px',
+                                            textDecoration: 'none',
+                                            boxShadow: '0 4px 10px rgba(16, 185, 129, 0.2)',
+                                            flexShrink: 0
+                                        }}
+                                    >
+                                        <MapPin size={14} /> Open Maps
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button 
+                                onClick={() => setSelectedAttendance(null)}
+                                style={{
+                                    padding: '10px 20px',
+                                    background: '#ef4444',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontWeight: '700',
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 10px rgba(239, 68, 68, 0.15)'
+                                }}
+                            >
+                                Close Proof
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

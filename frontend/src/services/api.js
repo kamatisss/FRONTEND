@@ -184,4 +184,78 @@ export const resetPassword = async ({ username, email, new_password }) => {
   }
 };
 
+// ─── User Management (Admin only) ──────────────────────────────
+export const listUsers = async () => {
+  try {
+    const res = await api.get('/users/');
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.error || err.response?.data?.detail || err.message || 'Failed to fetch users');
+  }
+};
+
+export const createUser = async (userData) => {
+  try {
+    const res = await api.post('/users/', userData);
+    return res.data;
+  } catch (err) {
+    // If the error response is an object with validation details, format them
+    const data = err.response?.data;
+    if (data && typeof data === 'object') {
+      const messages = Object.entries(data).map(([field, msgs]) => {
+        const msg = Array.isArray(msgs) ? msgs[0] : msgs;
+        return `${field}: ${msg}`;
+      });
+      throw new Error(messages.join(', '));
+    }
+    throw new Error(err.response?.data?.error || err.message || 'Failed to create user');
+  }
+};
+
+export const updateUser = async (id, userData) => {
+  try {
+    const res = await api.patch(`/users/${id}/`, userData);
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.error || err.message || 'Failed to update user');
+  }
+};
+
+// ─── Attendance Management (Staff & Admin) ──────────────────────
+export const getAttendanceLogs = async () => {
+  try {
+    const res = await api.get('/attendance/');
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.error || err.message || 'Failed to fetch attendance logs');
+  }
+};
+
+export const getCurrentAttendance = async () => {
+  try {
+    const res = await api.get('/attendance/current/');
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.error || err.message || 'Failed to fetch current attendance status');
+  }
+};
+
+export const clockIn = async (attendanceData) => {
+  try {
+    const res = await api.post('/attendance/clock_in/', attendanceData);
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.error || err.message || 'Clock in failed');
+  }
+};
+
+export const clockOut = async (attendanceData) => {
+  try {
+    const res = await api.post('/attendance/clock_out/', attendanceData);
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.error || err.message || 'Clock out failed');
+  }
+};
+
 export default api;

@@ -19,68 +19,102 @@ import {
   Wrench,
   Menu,
   X,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 
 /* ─── Animation Variants ──────────────────────────────────── */
 const FADE_UP = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
+};
+const FADE_IN = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.5 } },
 };
 const STAGGER = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.12 } },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+const STAGGER_SLOW = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
 };
 
-/* ─── Smooth scroll helper ────────────────────────────────── */
 function scrollTo(id) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 }
 
-/* ─── Services data ───────────────────────────────────────── */
+/* ─── Data ────────────────────────────────────────────────── */
 const SERVICES = [
-  { title: 'Garden Design',         icon: <Leaf size={28} />,        desc: 'Bespoke botanical layouts tailored to your local climate and personal aesthetic.' },
-  { title: '3D Virtual Landscaping',icon: <ImageIcon size={28} />,   desc: 'Immersive 3D previews of your future garden using our state-of-the-art studio.' },
-  { title: 'Plant Recommendations', icon: <Trees size={28} />,       desc: 'Expert curation of flora to ensure year-round vibrancy and sustainability.' },
-  { title: 'Hardscape Installation',icon: <ShieldCheck size={28} />, desc: 'Premium stonework, paving, and structural elements built to last generations.' },
-  { title: 'Outdoor Lighting',      icon: <Sun size={28} />,         desc: 'Architectural and mood lighting to bring your garden to life after dark.' },
-  { title: 'Lawn Maintenance',      icon: <Wrench size={28} />,      desc: 'Comprehensive care plans to keep your outdoor sanctuary in pristine condition.' },
+  { title: 'Garden Design',          icon: <Leaf size={24} />,        desc: 'Bespoke botanical layouts tailored to your local climate and personal aesthetic.' },
+  { title: '3D Virtual Landscaping', icon: <ImageIcon size={24} />,   desc: 'Immersive 3D previews of your future garden using our state-of-the-art studio.' },
+  { title: 'Plant Recommendations',  icon: <Trees size={24} />,       desc: 'Expert curation of flora to ensure year-round vibrancy and sustainability.' },
+  { title: 'Hardscape Installation', icon: <ShieldCheck size={24} />, desc: 'Premium stonework, paving, and structural elements built to last generations.' },
+  { title: 'Outdoor Lighting',       icon: <Sun size={24} />,         desc: 'Architectural and mood lighting to bring your garden to life after dark.' },
+  { title: 'Lawn Maintenance',       icon: <Wrench size={24} />,      desc: 'Comprehensive care plans to keep your outdoor sanctuary in pristine condition.' },
 ];
 
 const STEPS = [
-  { step: '01', title: 'Upload Photo',  desc: 'Take a picture of your current outdoor space.' },
-  { step: '02', title: 'Generate 3D',  desc: 'Our engine maps the depth and terrain automatically.' },
-  { step: '03', title: 'Design',       desc: 'Drag & drop premium plants and materials.' },
-  { step: '04', title: 'Build',        desc: 'Save your design or book our pros to install it.' },
+  { step: '01', title: 'Upload Photo',  desc: 'Take a photo of your current outdoor space and upload it to our platform.' },
+  { step: '02', title: 'Generate 3D',  desc: 'Our AI engine maps the depth and terrain of your space automatically.' },
+  { step: '03', title: 'Design',       desc: 'Drag & drop premium plants, furniture, and materials into the scene.' },
+  { step: '04', title: 'Build',        desc: 'Save your design or book our pros to bring it to life.' },
 ];
 
 const REVIEWS = [
-  { text: 'Being able to see the 3D design before spending any money gave me so much confidence. The installation team executed it perfectly.', name: 'Sarah M.', role: 'Homeowner' },
-  { text: 'The app is incredibly fun to use, and the final garden looks exactly like the 3D render. Worth every penny.', name: 'David L.', role: 'Property Developer' },
-  { text: 'They transformed my boring backyard into a tropical resort. The plant recommendations were spot on for our climate.', name: 'Elena R.', role: 'Homeowner' },
+  { text: 'Being able to see the 3D design before spending any money gave me so much confidence. The installation team executed it perfectly.', name: 'Sarah M.', role: 'Homeowner', rating: 5 },
+  { text: 'The app is incredibly fun to use, and the final garden looks exactly like the 3D render. Absolutely worth every penny.', name: 'David L.', role: 'Property Developer', rating: 5 },
+  { text: 'They transformed my boring backyard into a tropical resort. The plant recommendations were spot on for our climate.', name: 'Elena R.', role: 'Homeowner', rating: 5 },
 ];
 
 const STATS = [
-  { icon: <ShieldCheck />, num: '500+',  label: 'Completed Projects' },
-  { icon: <Users />,       num: '98%',   label: 'Happy Clients' },
-  { icon: <Trees />,       num: '1,200+',label: 'Plants Available' },
-  { icon: <Clock />,       num: '15+',   label: 'Years Experience' },
+  { icon: <ShieldCheck size={28} />, num: '500+',   label: 'Completed Projects' },
+  { icon: <Users size={28} />,       num: '98%',    label: 'Happy Clients' },
+  { icon: <Trees size={28} />,       num: '1,200+', label: 'Plants Available' },
+  { icon: <Clock size={28} />,       num: '15+',    label: 'Years Experience' },
+];
+
+const GALLERY = [
+  { src: 'https://images.unsplash.com/photo-1598902108854-10e335adac99?q=80&w=800&auto=format&fit=crop', label: 'Monstera Deliciosa', tall: true },
+  { src: 'https://images.unsplash.com/photo-1584622781564-1d987f7333c1?q=80&w=800&auto=format&fit=crop', label: 'Natural Stone', tall: false },
+  { src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop', label: 'Outdoor Lounge', tall: true },
+  { src: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?q=80&w=800&auto=format&fit=crop', label: 'Tropical Palms', tall: false },
 ];
 
 /* ══════════════════════════════════════════════════════════════
    MAIN COMPONENT
-   ══════════════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 export default function LandingPage() {
-  const [scrolled,     setScrolled]     = useState(false);
-  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [scrolled,   setScrolled]   = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  /* Enable free-scroll on body while landing page is mounted */
   useEffect(() => {
-    document.body.classList.add('landing-page-active');
-    return () => document.body.classList.remove('landing-page-active');
+    // Force scrolling to work regardless of parent layout constraints
+    const html = document.documentElement;
+    const body = document.body;
+
+    const prev = {
+      htmlOverflow: html.style.overflow,
+      bodyOverflow: body.style.overflow,
+      htmlHeight: html.style.height,
+      bodyHeight: body.style.height,
+    };
+
+    html.style.overflow = 'auto';
+    html.style.height = 'auto';
+    body.style.overflow = 'auto';
+    body.style.height = 'auto';
+
+    return () => {
+      html.style.overflow = prev.htmlOverflow;
+      html.style.height = prev.htmlHeight;
+      body.style.overflow = prev.bodyOverflow;
+      body.style.height = prev.bodyHeight;
+    };
   }, []);
 
-  /* Detect scroll to switch navbar style */
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -94,504 +128,934 @@ export default function LandingPage() {
   ];
 
   return (
-    /* Page wrapper — no overflow constraint here */
-    <div className="font-sans text-slate-900 bg-slate-50">
+    <div style={{ fontFamily: "'Inter', system-ui, sans-serif", color: '#0f172a', background: '#f8fafc', minHeight: '100vh' }}>
 
-      {/* ══════════════ STICKY NAVBAR ══════════════ */}
-      <nav
-        id="landing-navbar"
-        className={`landing-sticky-nav flex justify-between items-center px-6 md:px-12 py-4 ${
-          scrolled ? 'scrolled bg-white shadow-md' : 'bg-transparent'
-        }`}
-        style={!scrolled ? { background: 'linear-gradient(to bottom, rgba(2,6,23,0.5) 0%, transparent 100%)' } : {}}
-      >
-        {/* Logo */}
-        <div className={`flex items-center gap-2 ${scrolled ? 'text-slate-900' : 'text-white'}`}>
-          <Leaf size={26} className="text-emerald-500" />
-          <span className="text-xl font-black tracking-tight">Garden Studio</span>
-        </div>
+      {/* ══ GLOBAL STYLES ══ */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-        {/* Desktop Links */}
-        <div className="hidden md:flex gap-8 font-medium">
+        * { box-sizing: border-box; }
+
+        html, body {
+          overflow-x: hidden;
+          overflow-y: auto !important;
+          height: auto !important;
+          min-height: 100%;
+        }
+
+        /* Remove any overflow:hidden that wrapper layouts might inject */
+        #root, #app, [data-reactroot] {
+          overflow: visible !important;
+          height: auto !important;
+          min-height: 100%;
+        }
+
+        .gs-container {
+          width: 100%;
+          max-width: 1200px;
+          margin-left: auto;
+          margin-right: auto;
+          padding-left: 24px;
+          padding-right: 24px;
+        }
+
+        /* ── Navbar ── */
+        .gs-nav {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          z-index: 50;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 18px 32px;
+          transition: background 0.3s, box-shadow 0.3s, padding 0.3s;
+        }
+        .gs-nav.scrolled {
+          background: rgba(255,255,255,0.95);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          box-shadow: 0 1px 0 rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+          padding: 14px 32px;
+        }
+        .gs-nav-logo {
+          display: flex; align-items: center; gap: 8px;
+          font-weight: 900; font-size: 20px; letter-spacing: -0.5px;
+          text-decoration: none; color: inherit;
+        }
+        .gs-nav-links {
+          display: flex; gap: 32px;
+          list-style: none; margin: 0; padding: 0;
+        }
+        .gs-nav-links button {
+          background: none; border: none; cursor: pointer;
+          font-size: 15px; font-weight: 600; letter-spacing: -0.1px;
+          padding: 0; transition: color 0.2s;
+        }
+        .gs-nav-cta {
+          display: flex; align-items: center; gap: 12px;
+        }
+        .gs-btn-ghost {
+          font-size: 15px; font-weight: 700; padding: 8px 16px;
+          background: none; border: none; cursor: pointer;
+          text-decoration: none; transition: color 0.2s;
+          border-radius: 8px;
+        }
+        .gs-btn-primary {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 10px 22px; border-radius: 100px;
+          font-size: 14px; font-weight: 700; text-decoration: none;
+          transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+          border: none; cursor: pointer;
+          background: #10b981; color: white;
+          box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+        }
+        .gs-btn-primary:hover { background: #059669; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
+        .gs-btn-primary:active { transform: scale(0.97); }
+
+        /* ── Hero ── */
+        .gs-hero {
+          position: relative; min-height: 100vh;
+          display: flex; align-items: center; justify-content: center;
+          text-align: center;
+          padding: 100px 24px 80px;
+        }
+        .gs-hero-bg {
+          position: absolute; inset: 0; z-index: 0;
+        }
+        .gs-hero-bg img {
+          width: 100%; height: 100%; object-fit: cover;
+        }
+        .gs-hero-overlay {
+          position: absolute; inset: 0;
+          background: linear-gradient(160deg, rgba(2,10,20,0.72) 0%, rgba(2,30,20,0.55) 60%, rgba(5,40,30,0.45) 100%);
+        }
+        .gs-hero-content {
+          position: relative; z-index: 10;
+          max-width: 860px; margin: 0 auto;
+          display: flex; flex-direction: column; align-items: center;
+        }
+        .gs-hero-badge {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 14px; border-radius: 100px;
+          background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4);
+          color: #6ee7b7; font-size: 13px; font-weight: 700;
+          letter-spacing: 0.5px; text-transform: uppercase;
+          margin-bottom: 28px;
+        }
+        .gs-hero-h1 {
+          font-size: clamp(40px, 7vw, 76px);
+          font-weight: 900; line-height: 1.05;
+          letter-spacing: -2px; color: white;
+          margin: 0 0 24px;
+        }
+        .gs-hero-h1 span { color: #34d399; }
+        .gs-hero-sub {
+          font-size: clamp(16px, 2.2vw, 20px);
+          color: rgba(255,255,255,0.82);
+          font-weight: 400; line-height: 1.65;
+          margin: 0 0 44px; max-width: 580px;
+        }
+        .gs-hero-actions {
+          display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+        }
+        .gs-btn-hero-primary {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 16px 32px; border-radius: 100px;
+          font-size: 16px; font-weight: 800; text-decoration: none; color: white;
+          background: #10b981; transition: all 0.2s;
+          box-shadow: 0 8px 30px rgba(16,185,129,0.4);
+        }
+        .gs-btn-hero-primary:hover { background: #059669; transform: translateY(-2px); }
+        .gs-btn-hero-outline {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 16px 32px; border-radius: 100px;
+          font-size: 16px; font-weight: 700; text-decoration: none; color: white;
+          background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.35);
+          backdrop-filter: blur(8px); transition: all 0.2s; cursor: pointer;
+        }
+        .gs-btn-hero-outline:hover { background: rgba(255,255,255,0.18); }
+        .gs-scroll-indicator {
+          position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
+          z-index: 10; cursor: pointer; opacity: 0.7;
+          animation: bounce 2s infinite;
+        }
+        .gs-scroll-track {
+          width: 30px; height: 46px; border: 2px solid rgba(255,255,255,0.5);
+          border-radius: 15px; display: flex; justify-content: center; padding-top: 8px;
+        }
+        .gs-scroll-dot {
+          width: 4px; height: 10px; background: rgba(255,255,255,0.7); border-radius: 2px;
+        }
+        @keyframes bounce {
+          0%,100% { transform: translateX(-50%) translateY(0); }
+          50% { transform: translateX(-50%) translateY(8px); }
+        }
+
+        /* ── Feature Section ── */
+        .gs-feature {
+          padding: 100px 0;
+          background: white;
+        }
+        .gs-feature-inner {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 80px;
+          align-items: center;
+        }
+        .gs-section-eyebrow {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 5px 14px; border-radius: 100px;
+          background: #ecfdf5; border: 1px solid #a7f3d0;
+          color: #059669; font-size: 12px; font-weight: 800;
+          letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px;
+        }
+        .gs-section-title {
+          font-size: clamp(32px, 4vw, 52px);
+          font-weight: 900; line-height: 1.1;
+          letter-spacing: -1.5px; color: #0f172a;
+          margin: 0 0 20px;
+        }
+        .gs-section-body {
+          font-size: 17px; color: #475569;
+          line-height: 1.75; margin: 0 0 32px;
+        }
+        .gs-feature-list {
+          list-style: none; padding: 0; margin: 0 0 40px;
+          display: flex; flex-direction: column; gap: 14px;
+        }
+        .gs-feature-list li {
+          display: flex; align-items: center; gap: 12px;
+          font-size: 15px; font-weight: 600; color: #1e293b;
+        }
+        .gs-check-icon {
+          width: 22px; height: 22px; border-radius: 50%;
+          background: #ecfdf5; color: #10b981;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .gs-btn-dark {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 14px 28px; border-radius: 100px;
+          font-size: 15px; font-weight: 700; text-decoration: none;
+          background: #0f172a; color: white;
+          transition: background 0.2s, transform 0.2s;
+          box-shadow: 0 4px 16px rgba(15,23,42,0.2);
+        }
+        .gs-btn-dark:hover { background: #1e293b; transform: translateY(-1px); }
+        .gs-mockup-wrap {
+          position: relative;
+          display: flex; justify-content: center; align-items: center;
+        }
+        .gs-mockup-blob {
+          position: absolute;
+          width: 420px; height: 420px; border-radius: 50%;
+          background: radial-gradient(circle, #d1fae5 0%, #ecfdf5 60%, transparent 100%);
+          z-index: 0;
+        }
+        .gs-mockup-img {
+          position: relative; z-index: 1;
+          width: 100%; max-width: 500px; height: auto;
+          filter: drop-shadow(0 30px 50px rgba(0,0,0,0.15));
+        }
+
+        /* ── Services ── */
+        .gs-services {
+          padding: 100px 0;
+          background: #f8fafc;
+          border-top: 1px solid #e2e8f0;
+        }
+        .gs-section-header {
+          text-align: center;
+          margin-bottom: 60px;
+        }
+        .gs-services-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+        .gs-service-card {
+          padding: 36px 32px;
+          border-radius: 20px;
+          background: white;
+          border: 1px solid #e2e8f0;
+          transition: box-shadow 0.25s, transform 0.25s, border-color 0.25s;
+          position: relative; overflow: hidden;
+        }
+        .gs-service-card::before {
+          content: '';
+          position: absolute; top: 0; right: 0;
+          width: 80px; height: 80px;
+          background: #ecfdf5;
+          border-radius: 0 20px 0 100%;
+          transition: transform 0.3s;
+          z-index: 0;
+        }
+        .gs-service-card:hover {
+          box-shadow: 0 20px 50px rgba(16,185,129,0.08), 0 4px 16px rgba(0,0,0,0.04);
+          transform: translateY(-4px);
+          border-color: #a7f3d0;
+        }
+        .gs-service-card:hover::before { transform: scale(1.3); }
+        .gs-service-icon {
+          width: 52px; height: 52px; border-radius: 14px;
+          background: #ecfdf5; color: #10b981;
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 24px; position: relative; z-index: 1;
+        }
+        .gs-service-title {
+          font-size: 17px; font-weight: 800; color: #0f172a;
+          margin: 0 0 10px; position: relative; z-index: 1;
+        }
+        .gs-service-desc {
+          font-size: 14px; color: #64748b; line-height: 1.7;
+          margin: 0; position: relative; z-index: 1;
+        }
+
+        /* ── How It Works ── */
+        .gs-hiw {
+          padding: 100px 0;
+          background: white;
+        }
+        .gs-steps-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 32px;
+          position: relative;
+        }
+        .gs-steps-line {
+          position: absolute;
+          top: 40px; left: 12%; right: 12%; height: 2px;
+          background: linear-gradient(90deg, #e2e8f0 0%, #a7f3d0 50%, #e2e8f0 100%);
+          z-index: 0;
+        }
+        .gs-step-item {
+          display: flex; flex-direction: column; align-items: center;
+          text-align: center; position: relative; z-index: 1;
+        }
+        .gs-step-num {
+          width: 80px; height: 80px; border-radius: 50%;
+          background: white; border: 3px solid #e2e8f0;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 22px; font-weight: 900; color: #10b981;
+          margin-bottom: 24px; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .gs-step-item:hover .gs-step-num {
+          border-color: #10b981;
+          box-shadow: 0 0 0 6px rgba(16,185,129,0.12);
+        }
+        .gs-step-title { font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 10px; }
+        .gs-step-desc  { font-size: 14px; color: #64748b; line-height: 1.65; margin: 0; padding: 0 8px; }
+
+        /* ── Gallery ── */
+        .gs-gallery {
+          padding: 100px 0;
+          background: #f8fafc;
+          border-top: 1px solid #e2e8f0;
+        }
+        .gs-gallery-header {
+          display: flex; justify-content: space-between; align-items: flex-end;
+          margin-bottom: 48px;
+        }
+        .gs-gallery-link {
+          font-size: 14px; font-weight: 700; color: #10b981;
+          text-decoration: none; display: flex; align-items: center; gap: 4px;
+          transition: gap 0.2s;
+        }
+        .gs-gallery-link:hover { gap: 8px; }
+        .gs-gallery-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          grid-template-rows: 200px 200px;
+          gap: 16px;
+        }
+        .gs-gallery-item {
+          border-radius: 16px; overflow: hidden;
+          position: relative; cursor: pointer;
+        }
+        .gs-gallery-item:nth-child(1) { grid-row: span 2; }
+        .gs-gallery-item:nth-child(3) { grid-row: span 2; }
+        .gs-gallery-item img {
+          width: 100%; height: 100%; object-fit: cover;
+          transition: transform 0.6s cubic-bezier(0.22,1,0.36,1);
+        }
+        .gs-gallery-item:hover img { transform: scale(1.07); }
+        .gs-gallery-overlay {
+          position: absolute; inset: 0;
+          background: linear-gradient(to top, rgba(5,30,20,0.75) 0%, transparent 55%);
+          opacity: 0; transition: opacity 0.3s;
+          display: flex; align-items: flex-end; padding: 20px;
+        }
+        .gs-gallery-item:hover .gs-gallery-overlay { opacity: 1; }
+        .gs-gallery-label {
+          color: white; font-size: 15px; font-weight: 700;
+        }
+
+        /* ── Testimonials ── */
+        .gs-testimonials {
+          padding: 100px 0;
+          background: #022c22;
+          color: white;
+        }
+        .gs-reviews-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+        .gs-review-card {
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 20px; padding: 36px 32px;
+          position: relative;
+          transition: background 0.2s, border-color 0.2s;
+        }
+        .gs-review-card:hover {
+          background: rgba(255,255,255,0.09);
+          border-color: rgba(52,211,153,0.3);
+        }
+        .gs-quote-icon {
+          position: absolute; top: 24px; right: 28px;
+          color: rgba(52,211,153,0.2);
+        }
+        .gs-stars { display: flex; gap: 4px; margin-bottom: 20px; }
+        .gs-review-text {
+          font-size: 15px; line-height: 1.75;
+          color: rgba(255,255,255,0.82); margin: 0 0 28px;
+          font-weight: 400;
+        }
+        .gs-reviewer-name  { font-size: 15px; font-weight: 800; color: white; margin: 0 0 4px; }
+        .gs-reviewer-role  { font-size: 13px; color: #34d399; margin: 0; }
+
+        /* ── Stats ── */
+        .gs-stats {
+          padding: 80px 0;
+          background: white;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        .gs-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0;
+          text-align: center;
+        }
+        .gs-stat-item {
+          padding: 32px 20px;
+          border-right: 1px solid #f1f5f9;
+          display: flex; flex-direction: column; align-items: center; gap: 12px;
+        }
+        .gs-stat-item:last-child { border-right: none; }
+        .gs-stat-icon { color: #10b981; }
+        .gs-stat-num   { font-size: 44px; font-weight: 900; letter-spacing: -2px; color: #0f172a; line-height: 1; }
+        .gs-stat-label { font-size: 12px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* ── CTA ── */
+        .gs-cta {
+          padding: 120px 0;
+          background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #0f766e 100%);
+          text-align: center; color: white; position: relative; overflow: hidden;
+        }
+        .gs-cta-pattern {
+          position: absolute; inset: 0; opacity: 0.04;
+          background-image: radial-gradient(circle, white 1px, transparent 1px);
+          background-size: 32px 32px;
+        }
+        .gs-cta-content { position: relative; z-index: 1; }
+        .gs-cta-h2 {
+          font-size: clamp(36px, 5.5vw, 60px);
+          font-weight: 900; line-height: 1.08;
+          letter-spacing: -2px; margin: 0 0 20px;
+        }
+        .gs-cta-sub {
+          font-size: 18px; color: rgba(255,255,255,0.75);
+          margin: 0 0 48px; max-width: 520px; margin-left: auto; margin-right: auto;
+          line-height: 1.65;
+        }
+        .gs-cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .gs-btn-cta-white {
+          padding: 16px 36px; border-radius: 100px;
+          font-size: 16px; font-weight: 800; text-decoration: none;
+          background: white; color: #064e3b;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .gs-btn-cta-white:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+        .gs-btn-cta-outline {
+          padding: 16px 36px; border-radius: 100px;
+          font-size: 16px; font-weight: 700; text-decoration: none; color: white;
+          background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.35);
+          transition: background 0.2s;
+        }
+        .gs-btn-cta-outline:hover { background: rgba(255,255,255,0.18); }
+
+        /* ── Footer ── */
+        .gs-footer {
+          background: #020617;
+          color: #64748b;
+          padding-top: 72px;
+        }
+        .gs-footer-grid {
+          display: grid;
+          grid-template-columns: 1.5fr 1fr 1.2fr 1.3fr;
+          gap: 48px;
+          padding-bottom: 60px;
+          border-bottom: 1px solid #1e293b;
+        }
+        .gs-footer-brand { display: flex; align-items: center; gap: 8px; color: white; margin-bottom: 16px; text-decoration: none; }
+        .gs-footer-brand-name { font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+        .gs-footer-about { font-size: 14px; line-height: 1.75; margin: 0 0 24px; }
+        .gs-footer-socials { display: flex; gap: 10px; }
+        .gs-social-btn {
+          width: 36px; height: 36px; border-radius: 50%;
+          border: 1px solid #1e293b; background: transparent;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 11px; font-weight: 800; color: #475569; cursor: pointer;
+          transition: border-color 0.2s, color 0.2s, background 0.2s;
+        }
+        .gs-social-btn:hover { border-color: #10b981; color: #10b981; background: rgba(16,185,129,0.08); }
+        .gs-footer-heading { font-size: 14px; font-weight: 800; color: white; margin: 0 0 20px; letter-spacing: 0.3px; }
+        .gs-footer-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+        .gs-footer-links a,
+        .gs-footer-links button {
+          font-size: 14px; color: #64748b; text-decoration: none;
+          background: none; border: none; cursor: pointer; padding: 0;
+          transition: color 0.2s; text-align: left;
+        }
+        .gs-footer-links a:hover,
+        .gs-footer-links button:hover { color: #34d399; }
+        .gs-contact-item {
+          display: flex; align-items: flex-start; gap: 10px;
+          font-size: 14px; line-height: 1.6; margin-bottom: 14px;
+        }
+        .gs-contact-item svg { color: #10b981; flex-shrink: 0; margin-top: 2px; }
+        .gs-newsletter-text { font-size: 14px; line-height: 1.7; margin: 0 0 16px; }
+        .gs-newsletter-form { display: flex; }
+        .gs-newsletter-input {
+          flex: 1; padding: 11px 16px;
+          background: #0f172a; border: 1px solid #1e293b; border-right: none;
+          border-radius: 10px 0 0 10px; font-size: 14px; color: #cbd5e1;
+          outline: none; transition: border-color 0.2s;
+        }
+        .gs-newsletter-input::placeholder { color: #334155; }
+        .gs-newsletter-input:focus { border-color: #10b981; }
+        .gs-newsletter-btn {
+          padding: 11px 16px; background: #10b981; border: none; cursor: pointer;
+          border-radius: 0 10px 10px 0; color: white;
+          transition: background 0.2s;
+        }
+        .gs-newsletter-btn:hover { background: #059669; }
+        .gs-footer-bottom {
+          padding: 24px 0;
+          display: flex; justify-content: space-between; align-items: center;
+          font-size: 13px; flex-wrap: wrap; gap: 12px;
+        }
+        .gs-footer-legal { display: flex; gap: 24px; }
+        .gs-footer-legal a { color: #475569; text-decoration: none; transition: color 0.2s; }
+        .gs-footer-legal a:hover { color: #34d399; }
+
+        /* ── Mobile Menu ── */
+        .gs-mobile-menu {
+          position: fixed; top: 64px; left: 0; right: 0; z-index: 40;
+          background: white; border-bottom: 1px solid #e2e8f0;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+          padding: 24px; display: flex; flex-direction: column; gap: 4px;
+        }
+        .gs-mobile-link {
+          font-size: 17px; font-weight: 700; padding: 12px 0;
+          color: #0f172a; background: none; border: none; cursor: pointer;
+          text-align: left; border-bottom: 1px solid #f1f5f9; text-decoration: none;
+          transition: color 0.2s;
+        }
+        .gs-mobile-link:hover { color: #10b981; }
+        .gs-mobile-cta {
+          margin-top: 12px; padding: 14px;
+          background: #10b981; color: white; border-radius: 100px;
+          font-size: 16px; font-weight: 800; text-align: center; text-decoration: none;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+          .gs-feature-inner { grid-template-columns: 1fr; gap: 48px; }
+          .gs-services-grid { grid-template-columns: repeat(2, 1fr); }
+          .gs-steps-grid { grid-template-columns: repeat(2, 1fr); }
+          .gs-steps-line { display: none; }
+          .gs-footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
+          .gs-gallery-grid {
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: 200px 200px 200px 200px;
+          }
+          .gs-gallery-item:nth-child(1) { grid-row: span 1; }
+          .gs-gallery-item:nth-child(3) { grid-row: span 1; }
+        }
+        @media (max-width: 768px) {
+          .gs-nav { padding: 16px 20px; }
+          .gs-nav.scrolled { padding: 12px 20px; }
+          .gs-nav-links, .gs-nav-cta { display: none; }
+          .gs-services-grid { grid-template-columns: 1fr; }
+          .gs-steps-grid { grid-template-columns: 1fr; }
+          .gs-stats-grid { grid-template-columns: repeat(2, 1fr); }
+          .gs-stat-item:nth-child(2) { border-right: none; }
+          .gs-reviews-grid { grid-template-columns: 1fr; }
+          .gs-footer-grid { grid-template-columns: 1fr; gap: 32px; }
+          .gs-gallery-grid {
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: auto;
+          }
+          .gs-gallery-item { height: 180px; }
+          .gs-gallery-item:nth-child(1),
+          .gs-gallery-item:nth-child(3) { grid-row: span 1; }
+          .gs-gallery-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+          .gs-footer-bottom { flex-direction: column; text-align: center; }
+        }
+        .gs-mobile-ham { display: none; }
+        @media (max-width: 768px) { .gs-mobile-ham { display: block; } }
+      `}</style>
+
+      {/* ══ NAVBAR ══ */}
+      <nav className={`gs-nav ${scrolled ? 'scrolled' : ''}`}
+        style={!scrolled ? { background: 'linear-gradient(to bottom, rgba(2,10,20,0.6) 0%, transparent 100%)' } : {}}>
+        <a href="#" className="gs-nav-logo" style={{ color: scrolled ? '#0f172a' : 'white' }}>
+          <Leaf size={22} color="#10b981" />
+          <span>Garden Studio</span>
+        </a>
+        <ul className="gs-nav-links">
           {navLinks.map(({ label, id }) => (
-            <button
-              key={id}
-              onClick={() => scrollTo(id)}
-              className={`hover:text-emerald-500 transition-colors bg-transparent border-0 cursor-pointer font-medium ${scrolled ? 'text-slate-700' : 'text-white/90'}`}
-            >
-              {label}
-            </button>
+            <li key={id}>
+              <button
+                onClick={() => scrollTo(id)}
+                style={{ color: scrolled ? '#475569' : 'rgba(255,255,255,0.88)' }}
+                onMouseEnter={e => e.target.style.color = '#10b981'}
+                onMouseLeave={e => e.target.style.color = scrolled ? '#475569' : 'rgba(255,255,255,0.88)'}
+              >{label}</button>
+            </li>
           ))}
-        </div>
-
-        {/* CTA Buttons */}
-        <div className="hidden md:flex items-center gap-3">
-          <Link
-            to="/login"
-            className={`px-5 py-2 font-bold transition-colors ${scrolled ? 'text-slate-700 hover:text-emerald-500' : 'text-white/90 hover:text-white'}`}
-          >
+        </ul>
+        <div className="gs-nav-cta">
+          <Link to="/login" className="gs-btn-ghost" style={{ color: scrolled ? '#475569' : 'rgba(255,255,255,0.88)' }}>
             Log In
           </Link>
-          <Link
-            to="/register"
-            className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full font-bold shadow-lg shadow-emerald-500/30 transition-all active:scale-95 text-sm"
-          >
+          <Link to="/register" className="gs-btn-primary">
             Sign Up Free
           </Link>
         </div>
-
-        {/* Mobile Hamburger */}
-        <button
-          id="landing-menu-btn"
-          className={`md:hidden p-2 ${scrolled ? 'text-slate-900' : 'text-white'}`}
+        <button className="gs-mobile-ham"
           onClick={() => setMobileOpen(o => !o)}
-          aria-label="Toggle menu"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: scrolled ? '#0f172a' : 'white', padding: 4 }}
         >
           {mobileOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </nav>
 
-      {/* Mobile Menu Drawer */}
+      {/* Mobile Menu */}
       {mobileOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="md:hidden fixed top-[64px] left-0 right-0 z-40 bg-white shadow-xl border-b border-slate-100 px-6 py-6 flex flex-col gap-4"
-        >
+        <motion.div className="gs-mobile-menu"
+          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
           {navLinks.map(({ label, id }) => (
-            <button
-              key={id}
-              onClick={() => { scrollTo(id); setMobileOpen(false); }}
-              className="text-left text-slate-900 font-semibold text-lg hover:text-emerald-500 transition-colors bg-transparent border-0 cursor-pointer"
-            >
+            <button key={id} className="gs-mobile-link" onClick={() => { scrollTo(id); setMobileOpen(false); }}>
               {label}
             </button>
           ))}
-          <hr className="border-slate-100 my-2" />
-          <Link to="/login"    className="text-slate-700 font-semibold hover:text-emerald-500 transition-colors">Log In</Link>
-          <Link to="/register" className="w-full text-center py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full font-bold transition-all">Sign Up Free</Link>
+          <Link to="/login" className="gs-mobile-link" style={{ color: '#475569' }}>Log In</Link>
+          <Link to="/register" className="gs-mobile-cta">Sign Up Free</Link>
         </motion.div>
       )}
 
-      {/* ══════════════ SECTION 1 — HERO ══════════════ */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden -mt-[72px]">
-        {/* Background image */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/landing-hero.png"
-            alt="Beautiful landscaped garden"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+      {/* ══ HERO ══ */}
+      <section className="gs-hero">
+        <div className="gs-hero-bg">
+          <img src="/landing-hero.png" alt="Beautiful landscaped garden" />
+          <div className="gs-hero-overlay" />
         </div>
-
-        {/* Hero Content */}
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto mt-16">
-          <motion.div initial="hidden" animate="visible" variants={STAGGER}>
-            <motion.h1
-              variants={FADE_UP}
-              className="text-5xl md:text-7xl font-black text-white leading-tight mb-6 tracking-tight drop-shadow-lg"
-            >
-              Transform Your Space Into a{' '}
-              <br className="hidden md:block"/>
-              <span className="text-white">
-                Living Masterpiece.
-              </span>
+        <div className="gs-hero-content">
+          <motion.div initial="hidden" animate="visible" variants={STAGGER}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <motion.div variants={FADE_UP} className="gs-hero-badge">
+              <Sparkles size={13} />
+              AI-Powered Garden Design
+            </motion.div>
+            <motion.h1 variants={FADE_UP} className="gs-hero-h1">
+              Transform Your Space<br />Into a <span>Living Masterpiece.</span>
             </motion.h1>
-
-            <motion.p
-              variants={FADE_UP}
-              className="text-lg md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto font-medium leading-relaxed drop-shadow-md"
-            >
-              Experience the future of outdoor living. Visualize your dream garden with our AI-powered 3D studio.
+            <motion.p variants={FADE_UP} className="gs-hero-sub">
+              Experience the future of outdoor living. Visualize your dream garden with our AI-powered 3D studio before a single shovel hits the ground.
             </motion.p>
-
-            <motion.div variants={FADE_UP} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/studio"
-                className="w-full sm:w-auto px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full font-extrabold text-lg transition-all shadow-xl shadow-emerald-500/30 hover:-translate-y-1 flex items-center justify-center gap-2"
-              >
-                Start Designing <ArrowRight size={20} />
+            <motion.div variants={FADE_UP} className="gs-hero-actions">
+              <Link to="/studio" className="gs-btn-hero-primary">
+                Start Designing <ArrowRight size={18} />
               </Link>
-              <button
-                onClick={() => scrollTo('services')}
-                className="w-full sm:w-auto px-8 py-4 bg-transparent hover:bg-white/10 text-white border-2 border-white rounded-full font-bold text-lg transition-all cursor-pointer"
-              >
+              <button className="gs-btn-hero-outline" onClick={() => scrollTo('services')}>
                 Explore Services
               </button>
             </motion.div>
           </motion.div>
         </div>
-
-        {/* Scroll Indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 1 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/70 animate-bounce cursor-pointer"
-          onClick={() => scrollTo('showcase')}
-          aria-label="Scroll to feature section"
-        >
-          <div className="w-8 h-12 border-2 border-white/50 rounded-full flex justify-center pt-2">
-            <div className="w-1 h-3 bg-white/70 rounded-full" />
+        <div className="gs-scroll-indicator" onClick={() => scrollTo('showcase')}>
+          <div className="gs-scroll-track">
+            <div className="gs-scroll-dot" />
           </div>
-        </motion.div>
-      </section>
-
-      {/* ══════════════ SECTION 2 — FEATURE (3D STUDIO) ══════════════ */}
-      <section id="showcase" className="py-24 px-6 md:px-12 bg-white relative overflow-hidden scroll-mt-20">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 relative z-10">
-          {/* Left — Text */}
-          <motion.div
-            initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-            className="w-full lg:w-1/2 text-slate-900"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 font-bold text-sm mb-6 uppercase tracking-wider">
-              AI-Powered Editor
-            </div>
-            <h2 className="text-4xl md:text-6xl font-black mb-6 leading-tight text-slate-800">
-              Design your garden <br />
-              before you dig.
-            </h2>
-            <p className="text-lg text-slate-600 mb-8 font-medium leading-relaxed">
-              Upload a photo of your yard, and our AI instantly maps the terrain. Drag and drop premium plants,
-              furniture, and materials into a hyper-realistic 3D space to see exactly how it will look.
-            </p>
-            <ul className="space-y-4 mb-10">
-              {[
-                'Instant Terrain Mapping',
-                'Thousands of 3D botanical assets',
-                'Real-time cost estimation',
-                'One-click professional booking',
-              ].map((item, i) => (
-                <li key={i} className="flex items-center gap-3 text-slate-700 font-bold text-lg">
-                  <CheckCircleIcon className="text-emerald-500 shrink-0" /> {item}
-                </li>
-              ))}
-            </ul>
-            <Link
-              to="/studio"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-full font-bold transition-all shadow-lg active:scale-95"
-            >
-              Launch 3D Studio <ChevronRight size={20} />
-            </Link>
-          </motion.div>
-
-          {/* Right — Mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }} transition={{ duration: 0.8 }}
-            className="w-full lg:w-1/2 flex justify-center"
-          >
-            <img
-              src="/isometric-mockup.png"
-              alt="3D Editor Isometric Mockup"
-              className="w-full h-auto max-w-lg object-contain"
-              style={{ filter: 'drop-shadow(0 25px 35px rgba(0,0,0,0.1))' }}
-            />
-          </motion.div>
         </div>
       </section>
 
-      {/* ══════════════ SECTION 3 — SERVICES ══════════════ */}
-      <section id="services" className="py-24 px-6 md:px-12 bg-slate-50 relative scroll-mt-20 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <motion.span
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-              className="inline-block text-emerald-600 font-bold tracking-wider uppercase text-sm mb-3"
-            >
-              Our Expertise
-            </motion.span>
-            <motion.h2
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-              className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight"
-            >
-              Premium Services
-            </motion.h2>
+      {/* ══ FEATURE / 3D STUDIO ══ */}
+      <section id="showcase" className="gs-feature">
+        <div className="gs-container">
+          <div className="gs-feature-inner">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}>
+              <div className="gs-section-eyebrow">
+                <Sparkles size={11} /> AI-Powered Editor
+              </div>
+              <h2 className="gs-section-title">Design your garden<br />before you dig.</h2>
+              <p className="gs-section-body">
+                Upload a photo of your yard and our AI instantly maps the terrain. Drag and drop premium plants, furniture, and materials into a hyper-realistic 3D space to see exactly how it will look.
+              </p>
+              <ul className="gs-feature-list">
+                {['Instant Terrain Mapping', 'Thousands of 3D botanical assets', 'Real-time cost estimation', 'One-click professional booking'].map((item, i) => (
+                  <li key={i}>
+                    <span className="gs-check-icon"><Check size={13} strokeWidth={3} /></span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/studio" className="gs-btn-dark">
+                Launch 3D Studio <ChevronRight size={18} />
+              </Link>
+            </motion.div>
+            <motion.div
+              className="gs-mockup-wrap"
+              initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
+              <div className="gs-mockup-blob" />
+              <img src="/isometric-mockup.png" alt="3D Editor Isometric Mockup" className="gs-mockup-img" />
+            </motion.div>
           </div>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* ══ SERVICES ══ */}
+      <section id="services" className="gs-services">
+        <div className="gs-container">
+          <div className="gs-section-header">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}>
+              <div className="gs-section-eyebrow" style={{ marginBottom: 16 }}>Our Expertise</div>
+              <h2 className="gs-section-title">Premium Services</h2>
+              <p style={{ fontSize: 17, color: '#64748b', maxWidth: 480, margin: '12px auto 0', lineHeight: 1.65 }}>
+                From concept to completion — everything you need to transform your outdoor space.
+              </p>
+            </motion.div>
+          </div>
+          <motion.div className="gs-services-grid"
+            initial="hidden" whileInView="visible" viewport={{ once: true }} variants={STAGGER_SLOW}>
             {SERVICES.map((service, i) => (
-              <motion.div
-                key={i}
-                initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }} variants={FADE_UP}
-                className="group p-8 rounded-3xl bg-white border border-slate-100 hover:shadow-2xl hover:shadow-emerald-900/5 transition-all duration-300 relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform" />
-                <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                  {service.icon}
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{service.title}</h3>
-                <p className="text-slate-600 leading-relaxed">{service.desc}</p>
+              <motion.div key={i} variants={FADE_UP} className="gs-service-card">
+                <div className="gs-service-icon">{service.icon}</div>
+                <h3 className="gs-service-title">{service.title}</h3>
+                <p className="gs-service-desc">{service.desc}</p>
               </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════ SECTION 4 — HOW IT WORKS ══════════════ */}
-      <section id="how-it-works" className="py-24 px-6 md:px-12 bg-white scroll-mt-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <motion.span
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-              className="inline-block text-emerald-600 font-bold tracking-wider uppercase text-sm mb-3"
-            >
-              Process
-            </motion.span>
-            <motion.h2
-              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-              className="text-4xl font-black text-slate-900"
-            >
-              4 Steps to Your Paradise
-            </motion.h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
-            {/* Connecting line (desktop) */}
-            <div className="hidden md:block absolute top-12 left-[10%] right-[10%] h-0.5 bg-slate-100 -z-10" />
-
-            {STEPS.map((item, i) => (
-              <motion.div
-                key={i}
-                initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-                className="relative flex flex-col items-center text-center"
-              >
-                <div className="w-24 h-24 rounded-full bg-white border-4 border-slate-50 shadow-xl flex items-center justify-center text-2xl font-black text-emerald-600 mb-6 relative z-10">
-                  {item.step}
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-slate-500 px-4">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════ PLANT & MATERIAL GALLERY ══════════════ */}
-      <section className="py-24 px-6 md:px-12 bg-slate-50 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-            <div>
-              <p className="text-emerald-600 font-bold tracking-wider uppercase text-sm mb-3">Inspiration</p>
-              <h2 className="text-4xl font-black text-slate-900">Premium Materials</h2>
-            </div>
-            <Link to="/studio" className="font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors">
-              View full catalog <ArrowRight size={18} />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <GalleryImage src="https://images.unsplash.com/photo-1598902108854-10e335adac99?q=80&w=600&auto=format&fit=crop" label="Monstera Deliciosa" height="h-64 md:h-80" />
-            <GalleryImage src="https://images.unsplash.com/photo-1584622781564-1d987f7333c1?q=80&w=600&auto=format&fit=crop" label="Natural Stone"      height="h-64 md:h-64 md:mt-16" />
-            <GalleryImage src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop" label="Outdoor Lounge"     height="h-64 md:h-80" />
-            <GalleryImage src="https://images.unsplash.com/photo-1524404987053-ad221800f37c?q=80&w=600&auto=format&fit=crop" label="Tropical Palms"     height="h-64 md:h-64 md:mt-16" />
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════ TESTIMONIALS ══════════════ */}
-      <section className="py-24 px-6 md:px-12 bg-emerald-900 text-white overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-emerald-400 font-bold tracking-wider uppercase text-sm mb-3">Reviews</p>
-            <h2 className="text-4xl font-black">Loved by Homeowners</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {REVIEWS.map((review, i) => (
-              <motion.div
-                key={i}
-                initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-                className="bg-white/10 backdrop-blur-lg border border-white/10 p-8 rounded-3xl relative"
-              >
-                <Quote className="absolute top-6 right-6 text-emerald-500/30" size={40} />
-                <div className="flex gap-1 mb-6">
-                  {[...Array(5)].map((_, j) => <Star key={j} size={16} className="fill-emerald-400 text-emerald-400" />)}
-                </div>
-                <p className="text-lg font-light leading-relaxed mb-6">"{review.text}"</p>
-                <div>
-                  <p className="font-bold">{review.name}</p>
-                  <p className="text-sm text-emerald-300">{review.role}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════ STATS ══════════════ */}
-      <section className="py-20 px-6 md:px-12 bg-white border-b border-slate-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x-0 md:divide-x divide-slate-100">
-            {STATS.map((stat, i) => (
-              <motion.div
-                key={i}
-                initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-                className="flex flex-col items-center p-4"
-              >
-                <div className="text-emerald-500 mb-4">{stat.icon}</div>
-                <h3 className="text-4xl font-black text-slate-900 mb-2">{stat.num}</h3>
-                <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════ CALL TO ACTION ══════════════ */}
-      <section className="py-24 px-6 md:px-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-700 -z-20" />
-        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay pointer-events-none -z-10" />
-
-        <div className="max-w-4xl mx-auto text-center text-white relative z-10">
-          <motion.h2
-            initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-            className="text-4xl md:text-6xl font-black mb-8 leading-tight"
-          >
-            Ready to build your dream garden?
-          </motion.h2>
-          <motion.p
-            initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-            className="text-xl text-emerald-100 mb-10 font-light max-w-2xl mx-auto"
-          >
-            Create an account today to access the 3D studio, save your designs, and connect with our expert landscaping team.
-          </motion.p>
-          <motion.div
-            initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-            className="flex flex-col sm:flex-row justify-center gap-4"
-          >
-            <Link
-              to="/register"
-              className="px-8 py-4 bg-white text-emerald-700 hover:bg-slate-50 rounded-full font-black text-lg transition-all shadow-2xl active:scale-95"
-            >
-              Create Free Account
-            </Link>
-            <Link
-              to="/studio"
-              className="px-8 py-4 bg-transparent border border-white/30 hover:bg-white/10 rounded-full font-bold text-lg transition-all active:scale-95"
-            >
-              Try Studio as Guest
-            </Link>
           </motion.div>
         </div>
       </section>
 
-      {/* ══════════════ FOOTER ══════════════ */}
-      <footer className="bg-slate-950 text-slate-400 pt-16 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 pb-12">
-
-          {/* Brand */}
-          <div>
-            <div className="flex items-center gap-2 text-white mb-5">
-              <Leaf size={22} className="text-emerald-500" />
-              <span className="text-xl font-black tracking-tight">Garden Studio</span>
-            </div>
-            <p className="text-sm leading-relaxed mb-6">
-              Elevating outdoor living spaces with AI technology and premium landscaping craftsmanship.
-            </p>
-            {/* Social icons placeholder */}
-            <div className="flex gap-3">
-              {['fb', 'ig', 'tw'].map(s => (
-                <div key={s} className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-slate-400 hover:bg-emerald-500/20 hover:text-emerald-400 cursor-pointer transition-all">
-                  {s.toUpperCase()}
-                </div>
-              ))}
-            </div>
+      {/* ══ HOW IT WORKS ══ */}
+      <section id="how-it-works" className="gs-hiw">
+        <div className="gs-container">
+          <div className="gs-section-header">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}>
+              <div className="gs-section-eyebrow" style={{ marginBottom: 16 }}>Process</div>
+              <h2 className="gs-section-title">4 Steps to Your Paradise</h2>
+              <p style={{ fontSize: 17, color: '#64748b', maxWidth: 440, margin: '12px auto 0', lineHeight: 1.65 }}>
+                From photo to finished garden — our streamlined process makes it effortless.
+              </p>
+            </motion.div>
           </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-white font-bold mb-5">Quick Links</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link to="/studio"   className="hover:text-emerald-400 transition-colors">3D Studio</Link></li>
-              <li><button onClick={() => scrollTo('services')} className="hover:text-emerald-400 transition-colors bg-transparent border-0 cursor-pointer text-slate-400 text-sm p-0">Services</button></li>
-              <li><button onClick={() => scrollTo('how-it-works')} className="hover:text-emerald-400 transition-colors bg-transparent border-0 cursor-pointer text-slate-400 text-sm p-0">How it Works</button></li>
-              <li><Link to="/login"    className="hover:text-emerald-400 transition-colors">Login</Link></li>
-              <li><Link to="/register" className="hover:text-emerald-400 transition-colors">Sign Up</Link></li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 className="text-white font-bold mb-5">Contact Us</h4>
-            <ul className="space-y-4 text-sm">
-              <li className="flex items-start gap-3">
-                <MapPin size={17} className="text-emerald-500 shrink-0 mt-0.5" />
-                <span>123 Botanical Way, Green District<br />Pagbilao, Philippines 1000</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone size={17} className="text-emerald-500 shrink-0" />
-                <span>+63 912 345 6789</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Mail size={17} className="text-emerald-500 shrink-0" />
-                <span>hello@gardenstudio.com</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Newsletter */}
-          <div>
-            <h4 className="text-white font-bold mb-5">Newsletter</h4>
-            <p className="text-sm mb-4 leading-relaxed">Get seasonal gardening tips and design inspiration.</p>
-            <div className="flex">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="bg-slate-900 border border-slate-800 rounded-l-lg px-4 py-2.5 text-sm w-full focus:outline-none focus:border-emerald-500 text-slate-300 placeholder-slate-600"
-              />
-              <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-r-lg transition-colors shrink-0">
-                <ArrowRight size={17} />
-              </button>
-            </div>
+          <div className="gs-steps-grid">
+            <div className="gs-steps-line" />
+            {STEPS.map((item, i) => (
+              <motion.div key={i} className="gs-step-item"
+                initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
+                transition={{ delay: i * 0.08 }}>
+                <div className="gs-step-num">{item.step}</div>
+                <h3 className="gs-step-title">{item.title}</h3>
+                <p className="gs-step-desc">{item.desc}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
+      </section>
 
-        {/* Bottom bar */}
-        <div className="max-w-7xl mx-auto py-6 border-t border-slate-800 text-sm flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>© {new Date().getFullYear()} Garden Studio. All rights reserved.</p>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+      {/* ══ GALLERY ══ */}
+      <section className="gs-gallery">
+        <div className="gs-container">
+          <div className="gs-gallery-header">
+            <div>
+              <div className="gs-section-eyebrow" style={{ marginBottom: 14 }}>Inspiration</div>
+              <h2 className="gs-section-title" style={{ margin: 0 }}>Premium Materials</h2>
+            </div>
+            <Link to="/studio" className="gs-gallery-link">
+              View full catalog <ArrowRight size={16} />
+            </Link>
+          </div>
+          <motion.div className="gs-gallery-grid"
+            initial="hidden" whileInView="visible" viewport={{ once: true }} variants={STAGGER}>
+            {GALLERY.map((item, i) => (
+              <motion.div key={i} className="gs-gallery-item" variants={FADE_UP}>
+                <img src={item.src} alt={item.label} />
+                <div className="gs-gallery-overlay">
+                  <span className="gs-gallery-label">{item.label}</span>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══ TESTIMONIALS ══ */}
+      <section className="gs-testimonials">
+        <div className="gs-container">
+          <div className="gs-section-header" style={{ marginBottom: 56 }}>
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}>
+              <div className="gs-section-eyebrow" style={{ marginBottom: 16, background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399' }}>
+                Reviews
+              </div>
+              <h2 className="gs-section-title" style={{ color: 'white' }}>Loved by Homeowners</h2>
+              <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.6)', maxWidth: 440, margin: '12px auto 0', lineHeight: 1.65 }}>
+                Real results from real customers who transformed their spaces.
+              </p>
+            </motion.div>
+          </div>
+          <motion.div className="gs-reviews-grid"
+            initial="hidden" whileInView="visible" viewport={{ once: true }} variants={STAGGER}>
+            {REVIEWS.map((review, i) => (
+              <motion.div key={i} className="gs-review-card" variants={FADE_UP}>
+                <Quote size={36} className="gs-quote-icon" />
+                <div className="gs-stars">
+                  {[...Array(review.rating)].map((_, j) => (
+                    <Star key={j} size={14} fill="#34d399" color="#34d399" />
+                  ))}
+                </div>
+                <p className="gs-review-text">"{review.text}"</p>
+                <div>
+                  <p className="gs-reviewer-name">{review.name}</p>
+                  <p className="gs-reviewer-role">{review.role}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══ STATS ══ */}
+      <section className="gs-stats">
+        <div className="gs-container">
+          <motion.div className="gs-stats-grid"
+            initial="hidden" whileInView="visible" viewport={{ once: true }} variants={STAGGER}>
+            {STATS.map((stat, i) => (
+              <motion.div key={i} className="gs-stat-item" variants={FADE_UP}>
+                <div className="gs-stat-icon">{stat.icon}</div>
+                <div className="gs-stat-num">{stat.num}</div>
+                <div className="gs-stat-label">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══ CTA ══ */}
+      <section className="gs-cta">
+        <div className="gs-cta-pattern" />
+        <div className="gs-container gs-cta-content">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={STAGGER}>
+            <motion.div variants={FADE_UP}>
+              <div className="gs-section-eyebrow" style={{ marginBottom: 24, marginLeft: 'auto', marginRight: 'auto', display: 'table', background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399' }}>
+                Get Started Today
+              </div>
+            </motion.div>
+            <motion.h2 variants={FADE_UP} className="gs-cta-h2">
+              Ready to build your<br />dream garden?
+            </motion.h2>
+            <motion.p variants={FADE_UP} className="gs-cta-sub">
+              Create an account to access the 3D studio, save your designs, and connect with our expert landscaping team.
+            </motion.p>
+            <motion.div variants={FADE_UP} className="gs-cta-btns">
+              <Link to="/register" className="gs-btn-cta-white">Create Free Account</Link>
+              <Link to="/studio" className="gs-btn-cta-outline">Try Studio as Guest</Link>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══ FOOTER ══ */}
+      <footer className="gs-footer">
+        <div className="gs-container">
+          <div className="gs-footer-grid">
+            {/* Brand */}
+            <div>
+              <a href="#" className="gs-footer-brand">
+                <Leaf size={20} color="#10b981" />
+                <span className="gs-footer-brand-name">Garden Studio</span>
+              </a>
+              <p className="gs-footer-about">
+                Elevating outdoor living spaces with AI technology and premium landscaping craftsmanship since 2009.
+              </p>
+              <div className="gs-footer-socials">
+                {['FB', 'IG', 'TW'].map(s => (
+                  <button key={s} className="gs-social-btn">{s}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h4 className="gs-footer-heading">Quick Links</h4>
+              <ul className="gs-footer-links">
+                <li><Link to="/studio">3D Studio</Link></li>
+                <li><button onClick={() => scrollTo('services')}>Services</button></li>
+                <li><button onClick={() => scrollTo('how-it-works')}>How it Works</button></li>
+                <li><Link to="/login">Login</Link></li>
+                <li><Link to="/register">Sign Up</Link></li>
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="gs-footer-heading">Contact Us</h4>
+              <div className="gs-contact-item">
+                <MapPin size={16} />
+                <span>123 Botanical Way, Green District<br />Pagbilao, Philippines 1000</span>
+              </div>
+              <div className="gs-contact-item">
+                <Phone size={16} />
+                <span>+63 912 345 6789</span>
+              </div>
+              <div className="gs-contact-item">
+                <Mail size={16} />
+                <span>hello@gardenstudio.com</span>
+              </div>
+            </div>
+
+            {/* Newsletter */}
+            <div>
+              <h4 className="gs-footer-heading">Newsletter</h4>
+              <p className="gs-newsletter-text">Get seasonal gardening tips and design inspiration straight to your inbox.</p>
+              <div className="gs-newsletter-form">
+                <input type="email" placeholder="Your email address" className="gs-newsletter-input" />
+                <button className="gs-newsletter-btn">
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="gs-footer-bottom">
+            <p style={{ margin: 0 }}>© {new Date().getFullYear()} Garden Studio. All rights reserved.</p>
+            <div className="gs-footer-legal">
+              <a href="#">Privacy Policy</a>
+              <a href="#">Terms of Service</a>
+            </div>
           </div>
         </div>
       </footer>
+
     </div>
-  );
-}
-
-/* ─── Sub-components ──────────────────────────────────────── */
-function GalleryImage({ src, label, height }) {
-  return (
-    <motion.div
-      initial="hidden" whileInView="visible" viewport={{ once: true }} variants={FADE_UP}
-      className={`group relative rounded-2xl overflow-hidden cursor-pointer ${height}`}
-    >
-      <img src={src} alt={label} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-        <p className="text-white font-bold text-lg">{label}</p>
-      </div>
-    </motion.div>
-  );
-}
-
-function CheckCircleIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24" height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
+  );s
 }

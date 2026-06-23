@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Home, Calendar, CalendarDays, Archive, LayoutDashboard, CalendarPlus, LogOut } from 'lucide-react';
+import { Home, Calendar, CalendarDays, Archive, LayoutDashboard, CalendarPlus, LogOut, Clock } from 'lucide-react';
 
 const NavigationBar = () => {
     const { user, logoutUser } = useAuth();
@@ -52,6 +52,12 @@ const NavigationBar = () => {
                             <NavLink to="/inventory" className={navLinkClass}>
                                 <Archive size={18} className="mr-3" />
                                 Inventory
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink to={user.is_superuser ? "/admin-attendance" : "/staff-attendance"} className={navLinkClass}>
+                                <Clock size={18} className="mr-3" />
+                                Attendance
                             </NavLink>
                         </li>
                     </>

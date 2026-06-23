@@ -7,8 +7,10 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import AdminDashboard from "./components/AdminDashboard";
+import ManageUsers from "./components/ManageUsers";
 import InventoryDashboard from "./components/InventoryDashboard";
 import StaffDashboard from "./components/StaffDashboard";
+import BookingManagement from "./components/BookingManagement";
 import DashboardLayout from "./components/DashboardLayout";
 import ManageAvailability from "./components/ManageAvailability";
 import BookService from "./components/BookService";
@@ -17,6 +19,8 @@ import UserOrders from "./components/UserOrders";
 import OrderSuccess from "./components/OrderSuccess";
 import LandingPage from "./components/LandingPage";
 import ForgotPassword from "./components/ForgotPassword";
+import StaffAttendance from "./components/StaffAttendance";
+import AdminAttendance from "./components/AdminAttendance";
 import "./App.css";
 
 function App() {
@@ -107,6 +111,30 @@ function App() {
                 }
               />
 
+              {/* Staff Attendance */}
+              <Route
+                path="/staff-attendance"
+                element={
+                  <RoleProtectedRoute allowedRoles={['staff']}>
+                    <DashboardLayout>
+                      <StaffAttendance />
+                    </DashboardLayout>
+                  </RoleProtectedRoute>
+                }
+              />
+
+              {/* Admin Attendance */}
+              <Route
+                path="/admin-attendance"
+                element={
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout>
+                      <AdminAttendance />
+                    </DashboardLayout>
+                  </RoleProtectedRoute>
+                }
+              />
+
               {/* Manage Availability (Admin/Staff) */}
               <Route
                 path="/manage-availability"
@@ -131,13 +159,25 @@ function App() {
                 }
               />
 
+              {/* Manage Users (Admin) */}
+              <Route
+                path="/manage-users"
+                element={
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout>
+                      <ManageUsers />
+                    </DashboardLayout>
+                  </RoleProtectedRoute>
+                }
+              />
+
               {/* View Bookings (Admin/Staff) */}
               <Route
                 path="/view-bookings"
                 element={
                   <RoleProtectedRoute allowedRoles={['admin', 'staff']}>
                     <DashboardLayout>
-                      <StaffDashboard /> {/* Using StaffDashboard to display the bookings table */}
+                      <BookingManagement />
                     </DashboardLayout>
                   </RoleProtectedRoute>
                 }
