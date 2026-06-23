@@ -21,6 +21,7 @@ import LandingPage from "./components/LandingPage";
 import ForgotPassword from "./components/ForgotPassword";
 import StaffAttendance from "./components/StaffAttendance";
 import AdminAttendance from "./components/AdminAttendance";
+import UserDashboard from "./components/UserDashboard";
 import "./App.css";
 
 function App() {
@@ -42,13 +43,18 @@ function App() {
                 element={
                   <RoleProtectedRoute allowedRoles={['user']}>
                     <DashboardLayout>
-                      <div style={{ padding: '30px' }}>
-                        <h2>Welcome to your Dashboard!</h2>
-                        <p>Use the sidebar to navigate to the 3D Studio or book a service.</p>
-                      </div>
+                      <UserDashboard />
                     </DashboardLayout>
                   </RoleProtectedRoute>
                 }
+              />
+              <Route
+                path="/dashboard"
+                element={<Navigate to="/user-dashboard" replace />}
+              />
+              <Route
+                path="/client-dashboard"
+                element={<Navigate to="/user-dashboard" replace />}
               />
 
               {/* My 3D Studio */}

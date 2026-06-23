@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
       } else if (decodedUser.is_staff) {
         navigate('/staff-dashboard', { replace: true });
       } else {
-        navigate('/studio', { replace: true });
+        navigate('/user-dashboard', { replace: true });
       }
     } else {
       throw new Error(data.detail || 'Invalid credentials. Please try again.');

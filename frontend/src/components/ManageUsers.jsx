@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { listUsers, createUser, updateUser } from '../services/api';
-import { Users, Plus, Shield, CheckCircle, XCircle, Search, Loader2 } from 'lucide-react';
+import { listUsers, createUser, updateUser, getUserActivityLogs } from '../services/api';
+import { Users, Plus, Shield, CheckCircle, XCircle, Search, Loader2, Clock, Calendar, ShoppingBag, X, Info } from 'lucide-react';
 
 const ManageUsers = () => {
     const { user: currentUser } = useAuth();
@@ -21,6 +21,15 @@ const ManageUsers = () => {
         password: '',
         role: 'customer' // staff or customer
     });
+
+    // Edit user role & activity states
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedUserRole, setSelectedUserRole] = useState('customer');
+    const [activityLogs, setActivityLogs] = useState([]);
+    const [loadingLogs, setLoadingLogs] = useState(false);
+    const [logsError, setLogsError] = useState(null);
+    const [savingRole, setSavingRole] = useState(false);
 
     const fetchUsers = async () => {
         try {
@@ -47,8 +56,65 @@ const ManageUsers = () => {
         try {
             await updateUser(userId, { is_active: !currentActive });
             setUsers(users.map(u => u.id === userId ? { ...u, is_active: !currentActive } : u));
+            if (selectedUser && selectedUser.id === userId) {
+                setSelectedUser({ ...selectedUser, is_active: !currentActive });
+            }
         } catch (err) {
             alert(err.message || 'Failed to update user status');
+        }
+    };
+
+    const handleOpenEditModal = async (userObj) => {
+        setSelectedUser(userObj);
+        let currentRole = 'customer';
+        if (userObj.is_superuser) {
+            currentRole = 'admin';
+        } else if (userObj.is_staff) {
+            currentRole = 'staff';
+        }
+        setSelectedUserRole(currentRole);
+        setEditModalOpen(true);
+        setLoadingLogs(true);
+        setLogsError(null);
+        setActivityLogs([]);
+
+        try {
+            const res = await getUserActivityLogs(userObj.id);
+            setActivityLogs(res.activity_logs || []);
+        } catch (err) {
+            setLogsError(err.message || 'Failed to load activity logs.');
+        } finally {
+            setLoadingLogs(false);
+        }
+    };
+
+    const handleSaveRole = async () => {
+        if (!selectedUser) return;
+        setSavingRole(true);
+        try {
+            const res = await updateUser(selectedUser.id, { input_role: selectedUserRole });
+            
+            // Map API response to user list role
+            const mappedRole = res.is_superuser ? 'Admin' : (res.is_staff ? 'Staff' : 'Customer');
+            
+            setUsers(users.map(u => u.id === selectedUser.id ? { 
+                ...u, 
+                is_staff: res.is_staff, 
+                is_superuser: res.is_superuser, 
+                role: mappedRole 
+            } : u));
+            
+            setSelectedUser({
+                ...selectedUser,
+                is_staff: res.is_staff,
+                is_superuser: res.is_superuser,
+                role: mappedRole
+            });
+            alert("User role updated successfully.");
+        } catch (err) {
+            alert(err.message || "Failed to update user role.");
+        } finally {
+            setSavingRole(false);
         }
     };
 
@@ -371,7 +437,13 @@ const ManageUsers = () => {
                                         }
 
                                         return (
-                                            <tr key={item.id} style={{ background: '#ffffff', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}>
+                                            <tr 
+                                                key={item.id} 
+                                                onClick={() => handleOpenEditModal(item)}
+                                                style={{ background: '#ffffff', transition: 'background 0.2s', cursor: 'pointer' }} 
+                                                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} 
+                                                onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
+                                            >
                                                 <td style={{ padding: '16px 24px', color: '#475569', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{item.id}</td>
                                                 <td style={{ padding: '16px 24px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>
                                                     {item.first_name || item.last_name ? `${item.first_name || ''} ${item.last_name || ''}`.trim() : item.username}
@@ -407,7 +479,7 @@ const ManageUsers = () => {
                                                 </td>
                                                 <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
                                                     <button 
-                                                        onClick={() => handleToggleStatus(item.id, item.is_active)}
+                                                        onClick={(e) => { e.stopPropagation(); handleToggleStatus(item.id, item.is_active); }}
                                                         disabled={item.id === currentUser?.id}
                                                         style={{ 
                                                             padding: '8px 16px', 
@@ -449,6 +521,231 @@ const ManageUsers = () => {
                     </div>
                 )}
             </div>
+
+            {/* Edit User & Activity Modal */}
+            {editModalOpen && selectedUser && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(4px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                }}>
+                    <div style={{
+                        backgroundColor: '#ffffff',
+                        borderRadius: '16px',
+                        width: '90%',
+                        maxWidth: '850px',
+                        padding: '0',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid #e2e8f0',
+                        animation: 'modal-in 0.2s ease-out',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        maxHeight: '85vh'
+                    }}>
+                        <style>{`
+                            @keyframes modal-in {
+                                from { opacity: 0; transform: scale(0.95) translateY(10px); }
+                                to { opacity: 1; transform: scale(1) translateY(0); }
+                            }
+                        `}</style>
+                        {/* Header */}
+                        <div style={{
+                            padding: '24px 32px',
+                            borderBottom: '1px solid #e2e8f0',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: '#f8fafc'
+                        }}>
+                            <div>
+                                <h3 style={{ color: '#1e293b', fontSize: '20px', fontWeight: '800', margin: '0 0 4px 0' }}>Manage User Account</h3>
+                                <p style={{ color: '#64748b', fontSize: '13.5px', margin: 0 }}>Configure role permissions and review logs for <strong>@{selectedUser.username}</strong></p>
+                            </div>
+                            <button 
+                                onClick={() => setEditModalOpen(false)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '50%', transition: 'background 0.2s' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e2e8f0'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Body Columns */}
+                        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+                            {/* Left Column: Account Settings */}
+                            <div style={{ width: '40%', padding: '32px', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto' }}>
+                                <div>
+                                    <h4 style={{ color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', margin: '0 0 16px 0' }}>Account Settings</h4>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+                                        <div style={{ fontSize: '14px', color: '#1e293b', fontWeight: '700' }}>
+                                            {selectedUser.first_name || selectedUser.last_name ? `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() : selectedUser.username}
+                                        </div>
+                                        <div style={{ fontSize: '13px', color: '#64748b' }}>{selectedUser.email || 'No email associated'}</div>
+                                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Joined on {new Date(selectedUser.date_joined).toLocaleDateString()}</div>
+                                    </div>
+                                    
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '8px' }}>Assign Permission Level</label>
+                                    <select
+                                        value={selectedUserRole}
+                                        onChange={e => setSelectedUserRole(e.target.value)}
+                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#1e293b', backgroundColor: '#ffffff', cursor: 'pointer', marginBottom: '16px' }}
+                                    >
+                                        <option value="customer">Customer (Default client permissions)</option>
+                                        <option value="staff">Staff (Operational & design reviews)</option>
+                                        <option value="admin">Administrator (Full root privileges)</option>
+                                    </select>
+                                    
+                                    <button
+                                        onClick={handleSaveRole}
+                                        disabled={savingRole}
+                                        style={{ width: '100%', padding: '10px 16px', border: 'none', borderRadius: '8px', background: '#10b981', color: '#ffffff', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 4px 14px rgba(16,185,129,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = '#059669'}
+                                        onMouseLeave={e => e.currentTarget.style.background = '#10b981'}
+                                    >
+                                        {savingRole ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />}
+                                        {savingRole ? 'Saving Role...' : 'Save Role'}
+                                    </button>
+                                </div>
+                                
+                                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#475569', marginBottom: '8px' }}>Status Operations</label>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleToggleStatus(selectedUser.id, selectedUser.is_active); }}
+                                        disabled={selectedUser.id === currentUser?.id}
+                                        style={{ 
+                                            width: '100%',
+                                            padding: '10px 16px', 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            gap: '8px', 
+                                            cursor: (currentUser && selectedUser.id === currentUser.id) ? 'not-allowed' : 'pointer', 
+                                            background: '#ffffff', 
+                                            color: (currentUser && selectedUser.id === currentUser.id) ? '#94a3b8' : (selectedUser.is_active ? '#ef4444' : '#10b981'), 
+                                            border: `1px solid ${(currentUser && selectedUser.id === currentUser.id) ? '#e2e8f0' : (selectedUser.is_active ? '#fca5a5' : '#86efac')}`, 
+                                            borderRadius: '8px', 
+                                            fontWeight: '700', 
+                                            fontSize: '13px',
+                                            transition: 'all 0.2s',
+                                            opacity: (currentUser && selectedUser.id === currentUser.id) ? 0.6 : 1
+                                        }}
+                                        onMouseEnter={(e) => { 
+                                            if (!currentUser || selectedUser.id !== currentUser.id) {
+                                                e.currentTarget.style.background = selectedUser.is_active ? '#fef2f2' : '#f0fdf4'; 
+                                                e.currentTarget.style.borderColor = selectedUser.is_active ? '#ef4444' : '#10b981';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => { 
+                                            if (!currentUser || selectedUser.id !== currentUser.id) {
+                                                e.currentTarget.style.background = '#ffffff'; 
+                                                e.currentTarget.style.borderColor = selectedUser.is_active ? '#fca5a5' : '#86efac';
+                                            }
+                                        }}
+                                    >
+                                        {selectedUser.is_active ? 'Deactivate Account' : 'Activate Account'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Right Column: Activity Overview */}
+                            <div style={{ width: '60%', padding: '32px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                <h4 style={{ color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', margin: '0 0 16px 0' }}>Activity Overview</h4>
+                                
+                                <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', minHeight: 0 }}>
+                                    {loadingLogs ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '12px' }}>
+                                            <Loader2 size={24} color="#10b981" className="animate-spin" />
+                                            <span style={{ color: '#64748b', fontSize: '13.5px' }}>Retrieving activity audit logs...</span>
+                                        </div>
+                                    ) : logsError ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '16px', background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', borderRadius: '12px', fontSize: '13.5px' }}>
+                                            <XCircle size={18} />
+                                            <span>{logsError}</span>
+                                        </div>
+                                    ) : activityLogs.length === 0 ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', padding: '40px 0' }}>
+                                            <Info size={32} style={{ marginBottom: '12px', opacity: 0.5 }} />
+                                            <span style={{ fontSize: '14px' }}>No recorded user activities found.</span>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingLeft: '8px', borderLeft: '2px solid #e2e8f0', margin: '8px 0 8px 12px' }}>
+                                            {activityLogs.map((log, idx) => {
+                                                // Choose visual elements based on log type
+                                                let icon = <Clock size={14} color="#3b82f6" />;
+                                                let iconBg = '#eff6ff';
+                                                let typeLabel = 'Activity';
+                                                
+                                                if (log.type === 'clock_in') {
+                                                    icon = <Clock size={14} color="#3b82f6" />;
+                                                    iconBg = '#eff6ff';
+                                                    typeLabel = 'Clock In';
+                                                } else if (log.type === 'clock_out') {
+                                                    icon = <CheckCircle size={14} color="#10b981" />;
+                                                    iconBg = '#f0fdf4';
+                                                    typeLabel = 'Clock Out';
+                                                } else if (log.type === 'booking') {
+                                                    icon = <Calendar size={14} color="#6366f1" />;
+                                                    iconBg = '#e0e7ff';
+                                                    typeLabel = 'Service Booking';
+                                                } else if (log.type === 'order') {
+                                                    icon = <ShoppingBag size={14} color="#10b981" />;
+                                                    iconBg = '#ecfdf5';
+                                                    typeLabel = 'Product Order';
+                                                }
+
+                                                return (
+                                                    <div key={idx} style={{ position: 'relative', paddingLeft: '24px' }}>
+                                                        {/* Dot marker */}
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            left: '-29px',
+                                                            top: '4px',
+                                                            width: '28px',
+                                                            height: '28px',
+                                                            borderRadius: '50%',
+                                                            backgroundColor: iconBg,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            border: '2px solid #ffffff'
+                                                        }}>
+                                                            {icon}
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#475569', letterSpacing: '0.02em' }}>{typeLabel}</span>
+                                                                {log.timestamp && (
+                                                                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                                                        {new Date(log.timestamp).toLocaleString()}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div style={{ fontSize: '13px', color: '#1e293b', lineHeight: 1.4 }}>
+                                                                {log.details}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

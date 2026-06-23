@@ -11,9 +11,13 @@ import { submitOrder, createCheckoutSession } from '../services/api';
    GLOBAL STYLES
 ───────────────────────────────────────────────────────────────────────── */
 const STYLE_ID = 'psp-global-styles-v2';
-if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
-  const s = document.createElement('style');
-  s.id = STYLE_ID;
+if (typeof document !== 'undefined') {
+  let s = document.getElementById(STYLE_ID);
+  if (!s) {
+    s = document.createElement('style');
+    s.id = STYLE_ID;
+    document.head.appendChild(s);
+  }
   s.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
@@ -34,8 +38,8 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
       to   { opacity: 1; transform: translateX(0); }
     }
     @keyframes psp-pillFloat {
-      0%, 100% { transform: translateY(0px); box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(34,197,94,0.25); }
-      50%       { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(34,197,94,0.4); }
+      0%, 100% { transform: translateY(0px); box-shadow: 0 8px 32px rgba(15,23,42,0.08), 0 0 0 1px rgba(16,185,129,0.2); }
+      50%       { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(15,23,42,0.12), 0 0 0 1px rgba(16,185,129,0.35); }
     }
     @keyframes psp-badgePop {
       0%   { transform: scale(0.6); opacity: 0; }
@@ -52,15 +56,15 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
     /* Scrollbar */
     .psp-scroll::-webkit-scrollbar { width: 3px; }
     .psp-scroll::-webkit-scrollbar-track { background: transparent; }
-    .psp-scroll::-webkit-scrollbar-thumb { background: rgba(34,197,94,0.2); border-radius: 99px; }
-    .psp-scroll::-webkit-scrollbar-thumb:hover { background: rgba(34,197,94,0.45); }
+    .psp-scroll::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.25); border-radius: 99px; }
+    .psp-scroll::-webkit-scrollbar-thumb:hover { background: rgba(16,185,129,0.5); }
 
     /* Row */
     .psp-item-row {
       animation: psp-rowIn 0.24s cubic-bezier(.22,1,.36,1) both;
       transition: background 0.15s;
     }
-    .psp-item-row:hover { background: rgba(255,255,255,0.04) !important; }
+    .psp-item-row:hover { background: #f8fafc !important; }
 
     /* Icon buttons */
     .psp-icon-btn {
@@ -77,7 +81,7 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
       position: absolute;
       bottom: calc(100% + 7px);
       left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,0.88);
+      background: rgba(15,23,42,0.95);
       color: #fff; font-size: 10px; font-weight: 600;
       padding: 4px 9px; border-radius: 6px;
       white-space: nowrap; pointer-events: none;
@@ -91,10 +95,10 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
     .psp-pill {
       display: flex; align-items: center; gap: 12px;
       padding: 10px 10px 10px 16px;
-      background: rgba(9,18,11,0.94);
+      background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(20px) saturate(1.5);
       -webkit-backdrop-filter: blur(20px) saturate(1.5);
-      border: 1px solid rgba(34,197,94,0.28);
+      border: 1px solid rgba(16,185,129,0.3);
       border-radius: 99px;
       cursor: pointer;
       animation: psp-pillFloat 3s ease-in-out infinite;
@@ -103,19 +107,19 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
     .psp-pill:hover {
       animation: none;
       transform: scale(1.02);
-      border-color: rgba(34,197,94,0.5);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(34,197,94,0.3);
+      border-color: rgba(16,185,129,0.5);
+      box-shadow: 0 12px 40px rgba(15,23,42,0.12), 0 0 0 1px rgba(16,185,129,0.35);
     }
     .psp-pill:active { transform: scale(0.98); }
 
     /* Checkout button */
     .psp-checkout-btn {
       width: 100%; padding: 13px 20px;
-      background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
       color: #fff; border: none; border-radius: 12px;
       font-weight: 800; font-size: 0.78rem; letter-spacing: 0.07em; text-transform: uppercase;
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px;
-      box-shadow: 0 4px 20px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+      box-shadow: 0 4px 20px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
       transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
       position: relative; overflow: hidden;
     }
@@ -125,7 +129,7 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
       background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
       opacity: 0; transition: opacity 0.2s;
     }
-    .psp-checkout-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(22,163,74,0.5), inset 0 1px 0 rgba(255,255,255,0.15); }
+    .psp-checkout-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(16,185,129,0.4), inset 0 1px 0 rgba(255,255,255,0.2); }
     .psp-checkout-btn:hover::after { opacity: 1; }
     .psp-checkout-btn:active { transform: translateY(0); }
     .psp-checkout-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -152,19 +156,19 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
     /* Input fields */
     .psp-field {
       width: 100%; padding: 11px 14px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 10px; color: #f0fdf4;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px; color: #0f172a;
       font-size: 0.85rem; font-weight: 500; outline: none;
       box-sizing: border-box;
       transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
       font-family: 'Inter', system-ui, sans-serif;
     }
-    .psp-field::placeholder { color: rgba(240,253,244,0.25); }
+    .psp-field::placeholder { color: #94a3b8; }
     .psp-field:focus {
-      border-color: rgba(34,197,94,0.55);
-      box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
-      background: rgba(255,255,255,0.07);
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
+      background: #ffffff;
     }
 
     /* Payment card */
@@ -175,7 +179,6 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
     }
     .psp-pay-card:hover { transform: translateY(-1px); }
   `;
-  document.head.appendChild(s);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -183,28 +186,28 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
 ───────────────────────────────────────────────────────────────────────── */
 const C = {
   // Surfaces
-  panel:       'rgba(9,18,11,0.93)',
-  panelBorder: 'rgba(34,197,94,0.16)',
-  header:      'rgba(255,255,255,0.03)',
-  surface:     'rgba(255,255,255,0.05)',
-  surfaceHov:  'rgba(255,255,255,0.08)',
+  panel:       'rgba(255, 255, 255, 0.98)',
+  panelBorder: '#cbd5e1',
+  header:      '#f8fafc',
+  surface:     '#f1f5f9',
+  surfaceHov:  '#e2e8f0',
   // Brand green
-  green:       '#22c55e',
-  greenDark:   '#16a34a',
-  greenDeep:   '#15803d',
-  greenDim:    'rgba(34,197,94,0.1)',
-  greenDimBdr: 'rgba(34,197,94,0.22)',
-  greenGlow:   'rgba(34,197,94,0.35)',
+  green:       '#10b981',
+  greenDark:   '#059669',
+  greenDeep:   '#047857',
+  greenDim:    '#ecfdf5',
+  greenDimBdr: '#a7f3d0',
+  greenGlow:   'rgba(16, 185, 129, 0.15)',
   // Text
-  text:        '#f0fdf4',
-  textMid:     'rgba(240,253,244,0.6)',
-  textDim:     'rgba(240,253,244,0.35)',
+  text:        '#0f172a',
+  textMid:     '#475569',
+  textDim:     '#64748b',
   // Danger
-  red:         '#f87171',
-  redDim:      'rgba(248,113,113,0.12)',
+  red:         '#ef4444',
+  redDim:      '#fef2f2',
   // Borders
-  border:      'rgba(255,255,255,0.07)',
-  borderMid:   'rgba(255,255,255,0.12)',
+  border:      '#e2e8f0',
+  borderMid:   '#cbd5e1',
   // Mono font
   mono:        '"Courier New", ui-monospace, monospace',
 };
@@ -345,9 +348,9 @@ export default function ProjectSummaryPanel() {
           {/* Brand icon */}
           <span style={{
             width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-            background: 'linear-gradient(135deg, #15803d 0%, #22c55e 100%)',
+            background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(34,197,94,0.4)',
+            boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
           }}>
             <Leaf size={15} color="#fff" />
           </span>
@@ -364,11 +367,11 @@ export default function ProjectSummaryPanel() {
 
           {/* CTA chip */}
           <span style={{
-            background: 'linear-gradient(135deg, #15803d, #22c55e)',
+            background: 'linear-gradient(135deg, #059669, #10b981)',
             color: '#fff', fontSize: 10, fontWeight: 800,
             borderRadius: 99, padding: '5px 12px',
             letterSpacing: '0.06em', textTransform: 'uppercase',
-            boxShadow: '0 2px 8px rgba(34,197,94,0.35)',
+            boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
             whiteSpace: 'nowrap',
           }}>
             View
@@ -395,7 +398,7 @@ export default function ProjectSummaryPanel() {
           WebkitBackdropFilter: 'blur(24px) saturate(1.7)',
           border: `1px solid ${C.panelBorder}`,
           borderRadius: 18,
-          boxShadow: `0 20px 60px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)`,
+          boxShadow: `0 20px 60px rgba(15,23,42,0.08), 0 2px 8px rgba(15,23,42,0.04), inset 0 1px 0 rgba(255,255,255,0.6)`,
           overflow: 'hidden',
           animation: 'psp-panelIn 0.3s cubic-bezier(.22,1,.36,1) both',
           userSelect: 'none',
@@ -420,9 +423,9 @@ export default function ProjectSummaryPanel() {
           {/* Icon */}
           <div style={{
             width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-            background: 'linear-gradient(135deg, #14532d 0%, #22c55e 100%)',
+            background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(34,197,94,0.3)',
+            boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
           }}>
             <Package size={14} color="#fff" />
           </div>
@@ -584,20 +587,20 @@ export default function ProjectSummaryPanel() {
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '11px 14px',
-                background: 'linear-gradient(135deg, rgba(21,128,61,0.18) 0%, rgba(34,197,94,0.08) 100%)',
+                background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
                 border: `1px solid ${C.greenDimBdr}`,
                 borderRadius: 12,
                 marginBottom: 11,
               }}>
                 <div>
-                  <Label>Total Estimate</Label>
+                  <Label style={{ color: C.greenDark }}>Total Estimate</Label>
                   <p style={{ margin: '3px 0 0', fontSize: 9.5, color: C.textDim, fontWeight: 500 }}>
                     {costBreakdown.length} line{costBreakdown.length !== 1 ? 's' : ''} · incl. VAT
                   </p>
                 </div>
                 <span style={{
                   fontSize: '1.5rem', fontWeight: 900,
-                  color: C.text, fontFamily: C.mono,
+                  color: C.greenDark, fontFamily: C.mono,
                   letterSpacing: '-0.04em', lineHeight: 1,
                 }}>
                   ₱{totalCost.toLocaleString()}
@@ -624,16 +627,16 @@ export default function ProjectSummaryPanel() {
         <div
           style={{
             position: 'fixed', inset: 0, zIndex: 300,
-            background: 'rgba(0,8,0,0.7)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
+            background: 'rgba(15,23,42,0.4)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 16,
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowCheckout(false); }}
         >
           <div style={{
-            background: 'rgba(7,15,9,0.97)',
+            background: '#ffffff',
             backdropFilter: 'blur(28px)',
             WebkitBackdropFilter: 'blur(28px)',
             border: `1px solid ${C.panelBorder}`,
@@ -641,7 +644,7 @@ export default function ProjectSummaryPanel() {
             width: '100%', maxWidth: 440,
             maxHeight: '90vh',
             display: 'flex', flexDirection: 'column',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.05)',
+            boxShadow: '0 32px 80px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.8)',
             overflow: 'hidden',
             animation: 'psp-modalIn 0.28s cubic-bezier(.22,1,.36,1) both',
           }}>
@@ -657,9 +660,9 @@ export default function ProjectSummaryPanel() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
                 <div style={{
                   width: 42, height: 42, borderRadius: 13, flexShrink: 0,
-                  background: 'linear-gradient(135deg, #14532d 0%, #22c55e 100%)',
+                  background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 14px rgba(34,197,94,0.35)',
+                  boxShadow: '0 4px 14px rgba(16,185,129,0.25)',
                 }}>
                   <ShoppingCart size={18} color="#fff" />
                 </div>
@@ -703,7 +706,7 @@ export default function ProjectSummaryPanel() {
                   <Label>Full Name</Label>
                 </label>
                 <input
-                  required type="text" className="psp-field"
+                  required type="text" className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200"
                   value={formData.name} placeholder="Juan dela Cruz"
                   onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
                 />
@@ -714,7 +717,7 @@ export default function ProjectSummaryPanel() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6 }}><Label>Email</Label></label>
                   <input
-                    required type="email" className="psp-field"
+                    required type="email" className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200"
                     value={formData.email} placeholder="juan@email.com"
                     onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
                   />
@@ -722,7 +725,7 @@ export default function ProjectSummaryPanel() {
                 <div>
                   <label style={{ display: 'block', marginBottom: 6 }}><Label>Phone</Label></label>
                   <input
-                    required type="tel" className="psp-field"
+                    required type="tel" className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200"
                     value={formData.phone} placeholder="09XX XXX XXXX"
                     onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))}
                   />
@@ -733,7 +736,7 @@ export default function ProjectSummaryPanel() {
               <div>
                 <label style={{ display: 'block', marginBottom: 6 }}><Label>Delivery Address</Label></label>
                 <textarea
-                  required rows={2} className="psp-field"
+                  required rows={2} className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-transparent transition-all duration-200"
                   value={formData.address} placeholder="123 Garden St, Brgy. Halaman…"
                   onChange={e => setFormData(f => ({ ...f, address: e.target.value }))}
                   style={{ resize: 'none' }}
@@ -770,10 +773,10 @@ export default function ProjectSummaryPanel() {
                       onClick={() => setPayMethod(id)}
                       style={{
                         background: active
-                          ? 'linear-gradient(135deg, rgba(21,128,61,0.2), rgba(34,197,94,0.08))'
+                          ? 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)'
                           : C.surface,
                         border: `1.5px solid ${active ? C.greenDimBdr : C.border}`,
-                        boxShadow: active ? `0 0 0 1px ${C.green}18, 0 4px 16px rgba(34,197,94,0.1)` : 'none',
+                        boxShadow: active ? `0 0 0 1px ${C.green}18, 0 4px 16px rgba(16,185,129,0.08)` : 'none',
                       }}
                     >
                       {/* Radio dot */}
@@ -786,12 +789,12 @@ export default function ProjectSummaryPanel() {
                       <div style={{
                         width: 38, height: 38, borderRadius: 11,
                         background: active
-                          ? 'linear-gradient(135deg, #14532d, #22c55e)'
+                          ? 'linear-gradient(135deg, #059669, #10b981)'
                           : C.surface,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: active ? '#fff' : C.textDim,
                         transition: 'all 0.2s',
-                        boxShadow: active ? '0 3px 10px rgba(34,197,94,0.3)' : 'none',
+                        boxShadow: active ? '0 3px 10px rgba(16,185,129,0.25)' : 'none',
                       }}>
                         {icon}
                       </div>
@@ -811,21 +814,21 @@ export default function ProjectSummaryPanel() {
               {/* Amount due box */}
               <div style={{
                 padding: '14px 18px',
-                background: 'linear-gradient(135deg, #052e16 0%, #14532d 100%)',
-                border: `1px solid rgba(34,197,94,0.22)`,
+                background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+                border: `1px solid ${C.greenDimBdr}`,
                 borderRadius: 13,
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                boxShadow: '0 6px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+                boxShadow: '0 6px 24px rgba(16,185,129,0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
               }}>
                 <div>
-                  <Label style={{ color: 'rgba(240,253,244,0.5)' }}>Amount Due</Label>
-                  <p style={{ margin: '3px 0 0', fontSize: 9.5, color: 'rgba(240,253,244,0.32)', fontWeight: 500 }}>
+                  <Label style={{ color: C.greenDark }}>Amount Due</Label>
+                  <p style={{ margin: '3px 0 0', fontSize: 9.5, color: C.textMid, fontWeight: 500 }}>
                     {placedItems.length} items · {payMethod === 'cod' ? 'Pay on delivery' : 'Pay now'}
                   </p>
                 </div>
                 <span style={{
                   fontSize: '1.45rem', fontWeight: 900,
-                  color: '#fff', fontFamily: C.mono,
+                  color: C.greenDark, fontFamily: C.mono,
                   letterSpacing: '-0.04em', lineHeight: 1,
                 }}>
                   ₱{totalCost.toLocaleString()}
@@ -839,12 +842,12 @@ export default function ProjectSummaryPanel() {
                 className="psp-submit-btn"
                 style={{
                   background: payMethod === 'cod'
-                    ? 'linear-gradient(135deg, #14532d 0%, #22c55e 100%)'
-                    : 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+                    ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                    : 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
                   color: '#fff',
                   boxShadow: payMethod === 'cod'
-                    ? '0 6px 20px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.12)'
-                    : '0 6px 20px rgba(59,130,246,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
+                    ? '0 6px 20px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,0.12)'
+                    : '0 6px 20px rgba(59,130,246,0.2), inset 0 1px 0 rgba(255,255,255,0.12)',
                 }}
               >
                 {loading ? (

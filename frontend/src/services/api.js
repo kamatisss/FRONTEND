@@ -221,6 +221,16 @@ export const updateUser = async (id, userData) => {
   }
 };
 
+export const getUserActivityLogs = async (id) => {
+  try {
+    const res = await api.get(`/users/${id}/activity_log/`);
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.error || err.message || 'Failed to fetch activity logs');
+  }
+};
+
+
 // ─── Attendance Management (Staff & Admin) ──────────────────────
 export const getAttendanceLogs = async () => {
   try {
