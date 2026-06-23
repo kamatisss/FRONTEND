@@ -17,6 +17,9 @@ import {
     Eye
 } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const MEDIA_BASE_URL = import.meta.env.VITE_MEDIA_BASE_URL || 'http://localhost:8000';
+
 const BookingManagement = () => {
     const { authTokens } = useAuth();
     const [bookings, setBookings] = useState([]);
@@ -31,7 +34,7 @@ const BookingManagement = () => {
     const fetchBookings = async () => {
         try {
             setLoading(true);
-            const res = await fetch('http://localhost:8000/api/bookings/', {
+            const res = await fetch(`${API_BASE_URL}/bookings/`, {
                 headers: { 'Authorization': `Bearer ${authTokens.access}` }
             });
             const data = await res.json();
@@ -49,7 +52,7 @@ const BookingManagement = () => {
         // Auto-poll bookings every 10 seconds to reflect status changes made by admins/staff instantly
         const intervalId = setInterval(async () => {
             try {
-                const res = await fetch('http://localhost:8000/api/bookings/', {
+                const res = await fetch(`${API_BASE_URL}/bookings/`, {
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
                 if (res.ok) {
@@ -66,7 +69,7 @@ const BookingManagement = () => {
 
     const handleUpdateStatus = async (id, status) => {
         try {
-            const response = await fetch(`http://localhost:8000/api/bookings/${id}/update_status/`, {
+            const response = await fetch(`${API_BASE_URL}/bookings/${id}/update_status/`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -375,7 +378,7 @@ const BookingManagement = () => {
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                     {b.design_details.image_url && (
                                                                         <img 
-                                                                            src={b.design_details.image_url.startsWith('http') ? b.design_details.image_url : `http://localhost:8000${b.design_details.image_url}`} 
+                                                                            src={b.design_details.image_url.startsWith('http') ? b.design_details.image_url : `${MEDIA_BASE_URL}${b.design_details.image_url}`} 
                                                                             alt={b.design_details.name} 
                                                                             style={{ width: '40px', height: '30px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1', flexShrink: 0 }}
                                                                         />
@@ -462,7 +465,7 @@ const BookingManagement = () => {
                                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', padding: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
                                                                                 {b.design_details.image_url && (
                                                                                     <img 
-                                                                                        src={b.design_details.image_url.startsWith('http') ? b.design_details.image_url : `http://localhost:8000${b.design_details.image_url}`} 
+                                                                                        src={b.design_details.image_url.startsWith('http') ? b.design_details.image_url : `${MEDIA_BASE_URL}${b.design_details.image_url}`} 
                                                                                         alt={b.design_details.name} 
                                                                                         style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #cbd5e1', flexShrink: 0 }}
                                                                                     />
@@ -495,7 +498,7 @@ const BookingManagement = () => {
                                                                         {b.status === 'Completed' && b.clock_out_photo_url && (
                                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', padding: '12px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px' }}>
                                                                                 <img 
-                                                                                    src={b.clock_out_photo_url.startsWith('http') ? b.clock_out_photo_url : `http://localhost:8000${b.clock_out_photo_url}`} 
+                                                                                    src={b.clock_out_photo_url.startsWith('http') ? b.clock_out_photo_url : `${MEDIA_BASE_URL}${b.clock_out_photo_url}`} 
                                                                                     alt="Completion Proof" 
                                                                                     style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #cbd5e1', flexShrink: 0 }}
                                                                                 />
@@ -649,7 +652,7 @@ const BookingManagement = () => {
                         </div>
                         <div style={{ padding: '20px' }}>
                             <img
-                                src={proofPhotoUrl.startsWith('http') ? proofPhotoUrl : `http://localhost:8000${proofPhotoUrl}`}
+                                src={proofPhotoUrl.startsWith('http') ? proofPhotoUrl : `${MEDIA_BASE_URL}${proofPhotoUrl}`}
                                 alt="Completion Proof"
                                 style={{
                                     width: '100%',

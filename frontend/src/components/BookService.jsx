@@ -23,7 +23,7 @@ const BookService = () => {
     useEffect(() => {
         const fetchBlackoutDates = async () => {
             try {
-                const res = await fetch('http://localhost:8000/api/blackout-dates/');
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/blackout-dates/`);
                 const data = await res.json();
                 setBlackoutDates(data.map(b => new Date(b.date + 'T00:00:00')));
             } catch (error) {
@@ -37,7 +37,7 @@ const BookService = () => {
         const fetchDesigns = async () => {
             if (!authTokens) return;
             try {
-                const res = await fetch('http://localhost:8000/api/designs/', {
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/designs/`, {
                     headers: {
                         'Authorization': `Bearer ${authTokens.access}`
                     }
@@ -128,7 +128,7 @@ const BookService = () => {
         const formattedDate = localDate.toISOString().split('T')[0];
 
         try {
-            const res = await fetch('http://localhost:8000/api/bookings/', {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/bookings/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

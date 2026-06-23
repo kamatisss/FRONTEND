@@ -21,7 +21,7 @@ const StaffDashboard = () => {
     useEffect(() => {
         const fetchSubmittedDesigns = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/designs/submitted_designs/', {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/designs/submitted_designs/`, {
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch designs');
@@ -34,7 +34,7 @@ const StaffDashboard = () => {
 
         const fetchOrders = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/orders/', {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/orders/`, {
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch orders');
@@ -47,7 +47,7 @@ const StaffDashboard = () => {
 
         const fetchBookings = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/bookings/', {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/bookings/`, {
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch bookings');
@@ -60,7 +60,7 @@ const StaffDashboard = () => {
 
         const fetchInventory = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/inventory/', {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/inventory/`, {
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch inventory');
@@ -83,7 +83,7 @@ const StaffDashboard = () => {
 
     const handleUpdateStatus = async (id, status) => {
         try {
-            const response = await fetch(`http://localhost:8000/api/designs/${id}/update_status/`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/designs/${id}/update_status/`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ const StaffDashboard = () => {
 
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
         try {
-            const response = await fetch(`http://localhost:8000/api/orders/${orderId}/update_status/`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/orders/${orderId}/update_status/`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ const StaffDashboard = () => {
             });
 
             if (response.ok) {
-                const ordRes = await fetch('http://localhost:8000/api/orders/', {
+                const ordRes = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/orders/`, {
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
                 if (ordRes.ok) {

@@ -326,7 +326,7 @@ const StaffAttendance = () => {
       const statusData = await getCurrentAttendance();
       setStatus(statusData);
 
-      const bookingsRes = await fetch("http://localhost:8000/api/bookings/", {
+      const bookingsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/bookings/`, {
         headers: { Authorization: `Bearer ${authTokens.access}` },
       });
       if (bookingsRes.ok) {

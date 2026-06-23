@@ -13,7 +13,7 @@ const UserOrders = () => {
     const handleCancelOrder = async (orderId) => {
         if (window.confirm("Are you sure you want to cancel this order?")) {
             try {
-                const res = await fetch(`http://localhost:8000/api/orders/${orderId}/`, {
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/orders/${orderId}/`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
@@ -31,7 +31,7 @@ const UserOrders = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/orders/', {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/orders/`, {
                     headers: {
                         'Authorization': `Bearer ${authTokens.access}`,
                         'Content-Type': 'application/json'

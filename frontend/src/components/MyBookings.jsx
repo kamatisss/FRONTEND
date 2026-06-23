@@ -172,7 +172,7 @@ const MyBookings = () => {
 
     const fetchMyBookings = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/bookings/', {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/bookings/`, {
                 headers: { 'Authorization': `Bearer ${authTokens.access}` }
             });
             const data = await res.json();
@@ -191,7 +191,7 @@ const MyBookings = () => {
     const handleCancelBooking = async (bookingId) => {
         if (window.confirm("Are you sure you want to cancel this booking?")) {
             try {
-                const res = await fetch(`http://localhost:8000/api/bookings/${bookingId}/`, {
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/bookings/${bookingId}/`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
@@ -414,7 +414,7 @@ const MyBookings = () => {
                                             Service Completed Proof Photo
                                         </h4>
                                         <img 
-                                            src={b.clock_out_photo_url.startsWith('http') ? b.clock_out_photo_url : `http://localhost:8000${b.clock_out_photo_url}`} 
+                                            src={b.clock_out_photo_url.startsWith('http') ? b.clock_out_photo_url : `${import.meta.env.VITE_MEDIA_BASE_URL || 'http://localhost:8000'}${b.clock_out_photo_url}`} 
                                             alt="Finished work proof" 
                                             style={{
                                                 maxWidth: '400px',

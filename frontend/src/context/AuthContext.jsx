@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
    *                                      If null, falls back to the role-based dashboard.
    */
   const loginUser = async (username, password, redirectPath = null) => {
-    const response = await fetch('http://localhost:8000/api/token/', {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/token/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/token/refresh/', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/token/refresh/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh: authTokens.refresh })

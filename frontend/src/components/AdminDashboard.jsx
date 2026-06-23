@@ -5,6 +5,9 @@ import { useDesign } from '../context/DesignContext';
 import { loadDesign } from '../services/api';
 import { Shield, ChevronDown, ChevronUp, Eye, CheckCircle, XCircle, TrendingUp, ShoppingBag, Clock, Percent, MapPin, ExternalLink, Image } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const MEDIA_BASE_URL = import.meta.env.VITE_MEDIA_BASE_URL || 'http://localhost:8000';
+
 const AdminDashboard = () => {
     const { authTokens } = useAuth();
     const { dispatch } = useDesign();
@@ -21,7 +24,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchSubmittedDesigns = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/designs/submitted_designs/', {
+                const response = await fetch(`${API_BASE_URL}/designs/submitted_designs/`, {
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch designs');
@@ -34,7 +37,7 @@ const AdminDashboard = () => {
 
         const fetchOrders = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/orders/', {
+                const response = await fetch(`${API_BASE_URL}/orders/`, {
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch orders');
@@ -47,7 +50,7 @@ const AdminDashboard = () => {
 
         const fetchAttendanceLogs = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/attendance/', {
+                const response = await fetch(`${API_BASE_URL}/attendance/`, {
                     headers: { 'Authorization': `Bearer ${authTokens.access}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch attendance logs');
@@ -65,7 +68,7 @@ const AdminDashboard = () => {
 
     const handleUpdateStatus = async (id, status) => {
         try {
-            const response = await fetch(`http://localhost:8000/api/designs/${id}/update_status/`, {
+            const response = await fetch(`${API_BASE_URL}/designs/${id}/update_status/`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -627,7 +630,7 @@ const AdminDashboard = () => {
                                         <div style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textAlign: 'center' }}>CLOCK-IN PHOTO</div>
                                         {selectedAttendance.clock_in_photo_url ? (
                                             <img 
-                                                src={selectedAttendance.clock_in_photo_url.startsWith('http') ? selectedAttendance.clock_in_photo_url : `http://localhost:8000${selectedAttendance.clock_in_photo_url}`} 
+                                                src={selectedAttendance.clock_in_photo_url.startsWith('http') ? selectedAttendance.clock_in_photo_url : `${MEDIA_BASE_URL}${selectedAttendance.clock_in_photo_url}`} 
                                                 alt="Clock In Proof" 
                                                 style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px' }}
                                             />
@@ -641,7 +644,7 @@ const AdminDashboard = () => {
                                         <div style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '8px', textAlign: 'center' }}>CLOCK-OUT PHOTO</div>
                                         {selectedAttendance.clock_out_photo_url ? (
                                             <img 
-                                                src={selectedAttendance.clock_out_photo_url.startsWith('http') ? selectedAttendance.clock_out_photo_url : `http://localhost:8000${selectedAttendance.clock_out_photo_url}`} 
+                                                src={selectedAttendance.clock_out_photo_url.startsWith('http') ? selectedAttendance.clock_out_photo_url : `${MEDIA_BASE_URL}${selectedAttendance.clock_out_photo_url}`} 
                                                 alt="Clock Out Proof" 
                                                 style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px' }}
                                             />

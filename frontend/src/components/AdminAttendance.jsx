@@ -149,7 +149,7 @@ const AdminAttendance = () => {
   const getPhotoUrl = (url) => {
     if (!url) return null;
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    return `http://localhost:8000${url}`;
+    return `${import.meta.env.VITE_MEDIA_BASE_URL || 'http://localhost:8000'}${url}`;
   };
 
   const filteredLogs = logs.filter((log) => {
