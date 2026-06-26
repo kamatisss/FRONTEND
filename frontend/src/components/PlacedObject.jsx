@@ -290,6 +290,7 @@ export default function PlacedObject({ item, orbitControlsRef }) {
         <NormalizedModel
           url={modelUrl}
           category={item.category}
+          realWorldSize={productMatch?.real_world_size || item.real_world_size}
         />
       ) : (
         /* Fallback: red wireframe box */

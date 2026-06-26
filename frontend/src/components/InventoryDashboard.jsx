@@ -4,21 +4,22 @@ import { Package, Plus, Edit, Trash2, AlertTriangle, X } from 'lucide-react';
 
 /* ── Shared Inline Style Tokens ── */
 const thStyle = {
-  padding: '12px 24px',
-  fontSize: 11,
+  padding: '16px 24px',
+  fontSize: 12,
   fontWeight: 700,
-  color: '#94a3b8',
+  color: '#475569',
   textTransform: 'uppercase',
-  letterSpacing: '0.06em',
+  letterSpacing: '0.05em',
   textAlign: 'left',
-  borderBottom: '1px solid #e2e8f0',
+  borderBottom: '1px solid #f1f5f9',
   whiteSpace: 'nowrap',
 };
 
 const tdStyle = {
-  padding: '14px 24px',
+  padding: '16px 24px',
   fontSize: 14,
   whiteSpace: 'nowrap',
+  borderBottom: '1px solid #f1f5f9',
 };
 
 const actionBtnStyle = {
@@ -275,42 +276,36 @@ export default function InventoryDashboard() {
                     key={item.id}
                     style={{
                       borderBottom: '1px solid #f1f5f9',
-                      background: idx % 2 === 0 ? '#ffffff' : '#fafbfc',
+                      background: '#ffffff',
                       transition: 'background 0.15s ease',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
-                    onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? '#ffffff' : '#fafbfc'}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
                   >
                     <td style={{ ...tdStyle, fontWeight: 600, color: '#1e293b' }}>{item.name}</td>
-                    <td style={{ ...tdStyle, color: '#64748b' }}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '3px 10px',
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textTransform: 'capitalize',
-                        background: item.category === 'plant' ? '#ecfdf5' : item.category === 'furniture' ? '#eff6ff' : '#fef3c7',
-                        color: item.category === 'plant' ? '#047857' : item.category === 'furniture' ? '#1d4ed8' : '#92400e',
-                      }}>
+                    <td style={{ ...tdStyle }}>
+                      <span className={`inline-flex items-center gap-x-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border ${
+                        item.category === 'plant' 
+                          ? 'bg-green-50 text-green-700 border-green-200/50' 
+                          : item.category === 'furniture' 
+                            ? 'bg-blue-50 text-blue-700 border-blue-200/50' 
+                            : 'bg-amber-50 text-amber-700 border-amber-200/50'
+                      }`}>
                         {item.category}
                       </span>
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'right' }}>
-                      {item.stock_quantity < 10 ? (
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          padding: '4px 10px', borderRadius: 20,
-                          fontSize: 12, fontWeight: 700,
-                          background: '#fef2f2', color: '#dc2626',
-                        }}>
-                          <AlertTriangle size={13} />
-                          {item.stock_quantity}
-                          <span style={{ fontWeight: 500, opacity: 0.8 }}>Low</span>
+                      {item.stock_quantity === 0 ? (
+                        <span className="inline-flex items-center gap-x-1.5 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 border border-red-200/50">
+                          Out of Stock
+                        </span>
+                      ) : item.stock_quantity < 10 ? (
+                        <span className="inline-flex items-center gap-x-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 border border-amber-200/50">
+                          Low Stock ({item.stock_quantity})
                         </span>
                       ) : (
-                        <span style={{ fontWeight: 600, color: '#1e293b', fontVariantNumeric: 'tabular-nums' }}>
-                          {item.stock_quantity}
+                        <span className="inline-flex items-center gap-x-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 border border-green-200/50">
+                          Active ({item.stock_quantity})
                         </span>
                       )}
                     </td>

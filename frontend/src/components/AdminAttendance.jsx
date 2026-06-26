@@ -508,11 +508,13 @@ const AdminAttendance = () => {
                         {/* Hours */}
                         <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
                           {log.total_hours != null ? (
-                            <span style={{ fontWeight: 600, color: GREEN_DARK }}>
+                            <span 
+                              className={Number(log.total_hours || 0) === 0 ? "text-slate-400 font-semibold" : "text-emerald-600 font-semibold"}
+                            >
                               {log.total_hours} hrs
                             </span>
                           ) : (
-                            <span style={{ color: "#9ca3af" }}>—</span>
+                            <span className="text-slate-400">—</span>
                           )}
                         </td>
 
@@ -520,29 +522,10 @@ const AdminAttendance = () => {
                         <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
                           <button
                             onClick={() => setSelectedAttendance(log)}
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 5,
-                              padding: "5px 12px",
-                              background: GREEN_BG,
-                              border: `0.5px solid ${GREEN_BORDER}`,
-                              borderRadius: 6,
-                              fontSize: 12,
-                              fontWeight: 600,
-                              color: GREEN_DARK,
-                              cursor: "pointer",
-                              transition: "background 0.15s",
-                            }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.background = "#dcfce7")
-                            }
-                            onMouseLeave={(e) =>
-                              (e.currentTarget.style.background = GREEN_BG)
-                            }
+                            className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                            style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
                           >
-                            <Eye size={13} />
-                            View proof
+                            View Proof
                           </button>
                         </td>
                       </tr>

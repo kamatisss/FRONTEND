@@ -16,10 +16,10 @@ const BookingMilestoneTracker = ({ status }) => {
     const activeStep = getActiveStep(status);
     
     const steps = [
-        { label: 'Request Submitted', desc: 'Booking pending review' },
-        { label: 'Approved & Scheduled', desc: 'Service date confirmed' },
-        { label: 'Service In Progress', desc: 'Staff currently on site' },
-        { label: 'Completed', desc: 'Finished and verified' }
+        { label: 'Request Submitted', desc: 'Booking request sent' },
+        { label: 'AI Layout Created', desc: 'AI design generated' },
+        { label: 'Staff Review', desc: 'Reviewing layout details' },
+        { label: 'Finalized Studio Plan', desc: 'Ready in 3D Studio' }
     ];
 
     if (status === 'Cancelled') {
@@ -57,7 +57,7 @@ const BookingMilestoneTracker = ({ status }) => {
                     left: '6%',
                     right: '6%',
                     height: '4px',
-                    background: '#E5E7EB',
+                    background: '#EDE8DF',
                     zIndex: 0,
                 }} />
 
@@ -69,7 +69,7 @@ const BookingMilestoneTracker = ({ status }) => {
                         left: '6%',
                         width: `${(activeStep / (steps.length - 1)) * 88}%`,
                         height: '4px',
-                        background: '#10B981',
+                        background: 'linear-gradient(135deg, #2D4A2D, #4A7A3A)',
                         zIndex: 1,
                         transition: 'width 0.4s ease-in-out',
                     }} />
@@ -95,23 +95,23 @@ const BookingMilestoneTracker = ({ status }) => {
                     if (isCompleted) {
                         nodeStyle = {
                             ...nodeStyle,
-                            background: '#10B981',
-                            color: '#ffffff',
-                            border: '2px solid #10B981',
+                            background: '#4A7A3A',
+                            color: '#F7F3EC',
+                            border: '2px solid #4A7A3A',
                         };
                     } else if (isActive) {
                         nodeStyle = {
                             ...nodeStyle,
-                            background: '#ffffff',
-                            color: '#10B981',
-                            border: '3px solid #10B981',
+                            background: '#FDFAF6',
+                            color: '#4A7A3A',
+                            border: '3px solid #4A7A3A',
                         };
                     } else {
                         nodeStyle = {
                             ...nodeStyle,
-                            background: '#F3F4F6',
-                            color: '#9CA3AF',
-                            border: '2px solid #D1D5DB',
+                            background: '#F5F0E8',
+                            color: '#9A9080',
+                            border: '2px solid #E8E1D4',
                         };
                     }
 
@@ -143,7 +143,7 @@ const BookingMilestoneTracker = ({ status }) => {
                                 <div style={{
                                     fontSize: '0.8rem',
                                     fontWeight: isActive || isCompleted ? 700 : 500,
-                                    color: isActive ? '#059669' : isCompleted ? '#1F2937' : '#6B7280',
+                                    color: isActive ? '#4A7A3A' : isCompleted ? '#1A2E1A' : '#9A9080',
                                     lineHeight: 1.25,
                                     marginBottom: '4px',
                                 }}>
@@ -151,7 +151,7 @@ const BookingMilestoneTracker = ({ status }) => {
                                 </div>
                                 <div style={{
                                     fontSize: '0.7rem',
-                                    color: '#9CA3AF',
+                                    color: '#9A9080',
                                     fontWeight: 500,
                                 }}>
                                     {step.desc}
@@ -214,66 +214,69 @@ const MyBookings = () => {
             fontWeight: 700,
             display: 'inline-block',
             letterSpacing: '0.02em',
+            border: '1.5px solid transparent'
         };
         switch (status) {
             case 'Pending':
-                return { ...base, background: '#FEF9C3', color: '#A16207', border: '1px solid #FDE68A' };
+                return { ...base, background: '#FDFAF6', color: '#C9883A', borderColor: '#E8E1D4' };
             case 'Confirmed':
-                return { ...base, background: '#DCFCE7', color: '#15803D', border: '1px solid #BBF7D0' };
+                return { ...base, background: '#EAF0E4', color: '#4A7A3A', borderColor: '#8FAF7E' };
             case 'In Progress':
-                return { ...base, background: '#DBEAFE', color: '#1E40AF', border: '1px solid #BFDBFE' };
+                return { ...base, background: '#F0EBE0', color: '#8A7E6E', borderColor: '#D4CAB8' };
             case 'Completed':
-                return { ...base, background: '#DCFCE7', color: '#15803D', border: '1px solid #BBF7D0' };
+                return { ...base, background: '#EAF0E4', color: '#4A7A3A', borderColor: '#8FAF7E' };
             case 'Cancelled':
-                return { ...base, background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FECACA' };
+                return { ...base, background: '#FEF2F2', color: '#991B1B', borderColor: '#FECACA' };
             default:
-                return { ...base, background: '#F3F4F6', color: '#374151', border: '1px solid #E5E7EB' };
+                return { ...base, background: '#F5F0E8', color: '#9A9080', borderColor: '#E8E1D4' };
         }
     };
 
     const s = {
         page: {
             minHeight: 'calc(100vh - 64px)',
-            background: '#F3F4F6',
-            padding: '2rem',
-            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+            background: 'linear-gradient(160deg, #F7F3EC 0%, #EAF0E4 60%, #F0EBE0 100%)',
+            padding: '2.5rem 1.5rem',
+            fontFamily: "'Inter', system-ui, sans-serif",
         },
         card: {
             width: '100%',
             maxWidth: '1024px',
-            margin: '2.5rem auto 0',
-            background: '#ffffff',
-            borderRadius: '16px',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+            margin: '0 auto',
+            background: '#FDFAF6',
+            borderRadius: '20px',
+            border: '1.5px solid #E8E1D4',
+            boxShadow: '0 8px 30px rgba(45, 74, 45, 0.05)',
             overflow: 'hidden',
-            padding: '2rem',
+            padding: '2.5rem',
         },
         header: {
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
-            marginBottom: '1.5rem',
-            paddingBottom: '1rem',
-            borderBottom: '1px solid #E5E7EB',
+            gap: '14px',
+            marginBottom: '2rem',
+            paddingBottom: '1.25rem',
+            borderBottom: '1.5px solid #EDE8DF',
         },
         title: {
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: '#1e293b',
-            letterSpacing: '-0.02em',
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: '2rem',
+            fontWeight: 800,
+            color: '#1A2E1A',
+            letterSpacing: '-0.01em',
             margin: 0,
         },
         empty: {
             padding: '4rem 1rem',
             textAlign: 'center',
-            color: '#9CA3AF',
+            color: '#9A9080',
             fontSize: '1rem',
             fontWeight: 500,
         },
         loading: {
             padding: '4rem 1rem',
             textAlign: 'center',
-            color: '#9CA3AF',
+            color: '#9A9080',
             fontSize: '1rem',
             fontWeight: 500,
         },
@@ -284,13 +287,13 @@ const MyBookings = () => {
             <style>{`
                 @keyframes stepperPulse {
                     0% {
-                        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+                        box-shadow: 0 0 0 0 rgba(74, 122, 58, 0.4);
                     }
                     70% {
-                        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+                        box-shadow: 0 0 0 8px rgba(74, 122, 58, 0);
                     }
                     100% {
-                        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+                        box-shadow: 0 0 0 0 rgba(74, 122, 58, 0);
                     }
                 }
                 .stepper-active-node {
@@ -301,7 +304,7 @@ const MyBookings = () => {
 
                 {/* Card Header */}
                 <div style={s.header}>
-                    <Calendar size={28} style={{ color: '#10b981' }} />
+                    <Calendar size={28} style={{ color: '#4A7A3A' }} />
                     <h2 style={s.title}>My Bookings</h2>
                 </div>
 
@@ -314,21 +317,23 @@ const MyBookings = () => {
                         {bookings.map(b => (
                             <div key={b.id} style={{
                                 background: '#ffffff',
-                                borderRadius: '14px',
-                                border: '1px solid #E5E7EB',
+                                borderRadius: '16px',
+                                border: '1.5px solid #E8E1D4',
                                 padding: '24px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                boxShadow: '0 4px 12px rgba(45, 74, 45, 0.03)',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                transition: 'transform 0.15s, box-shadow 0.15s',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             }}
                             onMouseEnter={e => {
                                 e.currentTarget.style.transform = 'translateY(-2px)';
-                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)';
+                                e.currentTarget.style.borderColor = '#8FAF7E';
+                                e.currentTarget.style.boxShadow = '0 8px 24px rgba(45, 74, 45, 0.08)';
                             }}
                             onMouseLeave={e => {
                                 e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+                                e.currentTarget.style.borderColor = '#E8E1D4';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(45, 74, 45, 0.03)';
                             }}
                             >
                                 {/* Top row: Service Type & Status Badge */}
@@ -336,8 +341,8 @@ const MyBookings = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <span style={{
                                             padding: '4px 10px',
-                                            background: '#ECFDF5',
-                                            color: '#059669',
+                                            background: '#EAF0E4',
+                                            color: '#4A7A3A',
                                             borderRadius: '8px',
                                             fontSize: '0.75rem',
                                             fontWeight: 700,
@@ -346,7 +351,7 @@ const MyBookings = () => {
                                         }}>
                                             Service
                                         </span>
-                                        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1F2937', textTransform: 'capitalize' }}>
+                                        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1A2E1A', textTransform: 'capitalize' }}>
                                             {b.service_type}
                                         </h3>
                                     </div>
@@ -372,26 +377,26 @@ const MyBookings = () => {
                                 </div>
 
                                 {/* Booking details grid */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #F3F4F6' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1.5px solid #F0EBE0' }}>
                                     <div>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Date & Time</span>
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#374151' }}>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8A7E6E', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Date & Time</span>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#2D2D2D' }}>
                                             {b.scheduled_date} {b.preferred_time ? `• ${b.preferred_time}` : ''}
                                         </span>
                                     </div>
                                     {b.service_address && (
                                         <div style={{ gridColumn: 'span 2' }}>
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Location</span>
-                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <MapPin size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8A7E6E', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Location</span>
+                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#2D2D2D', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <MapPin size={14} style={{ color: '#4A7A3A', flexShrink: 0 }} />
                                                 {b.service_address}
                                             </span>
                                         </div>
                                     )}
                                     {b.contact_number && (
                                         <div>
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Contact</span>
-                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#374151' }}>{b.contact_number}</span>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#8A7E6E', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Contact</span>
+                                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#2D2D2D' }}>{b.contact_number}</span>
                                         </div>
                                     )}
                                 </div>

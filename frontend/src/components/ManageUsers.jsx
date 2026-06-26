@@ -457,22 +457,15 @@ const ManageUsers = () => {
                                                     }}>{role}</span>
                                                 </td>
                                                 <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <span style={{
-                                                            width: '8px',
-                                                            height: '8px',
-                                                            borderRadius: '50%',
-                                                            backgroundColor: item.is_active ? '#10b981' : '#ef4444',
-                                                            display: 'inline-block'
-                                                        }} />
-                                                        <span style={{
-                                                            color: item.is_active ? '#065F46' : '#991B1B',
-                                                            fontWeight: '700',
-                                                            fontSize: '13px'
-                                                        }}>
-                                                            {item.is_active ? 'Active' : 'Deactivated'}
+                                                    {item.is_active ? (
+                                                        <span className="inline-flex items-center gap-x-1.5 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 border border-green-200/50">
+                                                            Active
                                                         </span>
-                                                    </div>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-x-1.5 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 border border-red-200/50">
+                                                            Deactivated
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td style={{ padding: '16px 24px', color: '#64748b', borderBottom: '1px solid #f1f5f9', fontSize: '13.5px' }}>
                                                     {new Date(item.date_joined).toLocaleDateString()}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDesign } from '../context/DesignContext';
 import { loadDesign } from '../services/api';
-import { Shield, ChevronDown, ChevronUp, Eye, CheckCircle, XCircle, TrendingUp, ShoppingBag, Clock, Percent, MapPin, ExternalLink, Image } from 'lucide-react';
+import { Shield, ChevronDown, ChevronUp, Eye, CheckCircle, XCircle, TrendingUp, ShoppingBag, Clock, Percent, MapPin, ExternalLink, Image, Sparkles, Users } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 const MEDIA_BASE_URL = import.meta.env.VITE_MEDIA_BASE_URL || 'http://localhost:8000';
@@ -12,7 +12,7 @@ const AdminDashboard = () => {
     const { authTokens } = useAuth();
     const { dispatch } = useDesign();
     const navigate = useNavigate();
-    const [designs, setDesigns] = useState([]);
+        const [designs, setDesigns] = useState([]);
     const [orders, setOrders] = useState([]);
     const [attendanceLogs, setAttendanceLogs] = useState([]);
     const [selectedAttendance, setSelectedAttendance] = useState(null);
@@ -20,6 +20,8 @@ const AdminDashboard = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('designs');
     const [expandedOrder, setExpandedOrder] = useState(null);
+    const [allDesigns, setAllDesigns] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
 
     useEffect(() => {
         const fetchSubmittedDesigns = async () => {
@@ -61,8 +63,42 @@ const AdminDashboard = () => {
             }
         };
 
+        const fetchAllDesigns = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/designs/`, {
+                    headers: { 'Authorization': `Bearer ${authTokens.access}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setAllDesigns(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch all designs:', err);
+            }
+        };
+
+        const fetchAllUsers = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/`, {
+                    headers: { 'Authorization': `Bearer ${authTokens.access}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setAllUsers(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch all users:', err);
+            }
+        };
+
         if (authTokens) {
-            Promise.all([fetchSubmittedDesigns(), fetchOrders(), fetchAttendanceLogs()]).finally(() => setLoading(false));
+            Promise.all([
+                fetchSubmittedDesigns(),
+                fetchOrders(),
+                fetchAttendanceLogs(),
+                fetchAllDesigns(),
+                fetchAllUsers()
+            ]).finally(() => setLoading(false));
         }
     }, [authTokens]);
 
@@ -132,14 +168,10 @@ const AdminDashboard = () => {
     const onlinePercentage = totalOrdersCount > 0 ? 100 - codPercentage : 0;
 
     return (
-        <div style={{ backgroundColor: '#f1f5f9', minHeight: '100%', padding: '40px', fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ backgroundColor: '#f8fafc', minHeight: '100%', padding: '40px', fontFamily: "'Inter', sans-serif" }}>
             <div style={{ 
                 maxWidth: '1200px', 
-                margin: '0 auto', 
-                backgroundColor: '#ffffff', 
-                borderRadius: '16px', 
-                padding: '32px',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)'
+                margin: '0 auto',
             }}>
                 
                 {/* Hero Section */}
@@ -148,145 +180,68 @@ const AdminDashboard = () => {
                     alignItems: 'center',
                     marginBottom: '32px'
                 }}>
-                    <Shield size={36} color="#10b981" style={{ marginRight: '20px' }} />
+                    <Shield size={36} color="#059669" style={{ marginRight: '20px' }} />
                     <div>
-                        <h1 style={{ color: '#1e293b', fontSize: '28px', margin: '0 0 4px 0', fontWeight: '800' }}>Admin Dashboard</h1>
-                        <p style={{ color: '#64748b', margin: 0, fontSize: '15px' }}>Review submitted garden designs</p>
+                        <h1 style={{ color: '#0f172a', fontSize: '28px', margin: '0 0 4px 0', fontWeight: '800', letterSpacing: '-0.02em' }}>Admin Dashboard</h1>
+                        <p style={{ color: '#64748b', margin: 0, fontSize: '15px' }}>System-wide control tower and monitoring</p>
                     </div>
                 </div>
 
                 {/* Analytics Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6" style={{ marginBottom: '32px' }}>
-                    {/* Total Revenue */}
-                    <div 
-                        style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                            transition: 'all 0.2s ease-in-out',
-                            cursor: 'default'
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
-                        }}
-                    >
+                    {/* Total Earnings */}
+                    <div className="border border-slate-100 rounded-xl bg-white p-6 shadow-sm flex items-center justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                         <div>
-                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Revenue</p>
-                            <h3 style={{ color: '#10b981', fontSize: '24px', fontWeight: '800', margin: 0 }}>₱{totalRevenue.toLocaleString()}</h3>
+                            <p style={{ color: '#64748b', fontSize: '12px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Earnings (PHP)</p>
+                            <h3 style={{ color: '#059669', fontSize: '24px', fontWeight: '800', margin: 0 }}>₱{totalRevenue.toLocaleString()}</h3>
                         </div>
                         <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
-                            <TrendingUp size={24} color="#10b981" />
+                            <TrendingUp size={24} color="#059669" />
                         </div>
                     </div>
 
-                    {/* Total Orders */}
-                    <div 
-                        style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                            transition: 'all 0.2s ease-in-out',
-                            cursor: 'default'
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
-                        }}
-                    >
+                    {/* Total AI Generations */}
+                    <div className="border border-slate-100 rounded-xl bg-white p-6 shadow-sm flex items-center justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                         <div>
-                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Orders</p>
-                            <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{totalOrdersCount}</h3>
+                            <p style={{ color: '#64748b', fontSize: '12px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total AI Generations</p>
+                            <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{allDesigns.length || 0}</h3>
                         </div>
-                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
-                            <ShoppingBag size={24} color="#10b981" />
+                        <div style={{ backgroundColor: '#faf5ff', padding: '12px', borderRadius: '10px' }}>
+                            <Sparkles size={24} color="#a855f7" />
+                        </div>
+                    </div>
+
+                    {/* Active Registered Users */}
+                    <div className="border border-slate-100 rounded-xl bg-white p-6 shadow-sm flex items-center justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                        <div>
+                            <p style={{ color: '#64748b', fontSize: '12px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Registered Users</p>
+                            <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{allUsers.filter(u => u.is_active).length || 0}</h3>
+                        </div>
+                        <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px' }}>
+                            <Users size={24} color="#3b82f6" />
                         </div>
                     </div>
 
                     {/* Pending Designs */}
-                    <div 
-                        style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                            transition: 'all 0.2s ease-in-out',
-                            cursor: 'default'
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
-                        }}
-                    >
+                    <div className="border border-slate-100 rounded-xl bg-white p-6 shadow-sm flex items-center justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                         <div>
-                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pending Designs</p>
+                            <p style={{ color: '#64748b', fontSize: '12px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pending Designs</p>
                             <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{pendingDesignsCount}</h3>
                         </div>
-                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
-                            <Clock size={24} color="#10b981" />
-                        </div>
-                    </div>
-
-                    {/* COD vs Online */}
-                    <div 
-                        style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                            transition: 'all 0.2s ease-in-out',
-                            cursor: 'default'
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
-                        }}
-                    >
-                        <div>
-                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>COD vs Online</p>
-                            <h3 style={{ color: '#1e293b', fontSize: '20px', fontWeight: '800', margin: 0 }}>
-                                {codPercentage}% <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>vs</span> {onlinePercentage}%
-                            </h3>
-                        </div>
-                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
-                            <Percent size={24} color="#10b981" />
+                        <div style={{ backgroundColor: '#fef3c7', padding: '12px', borderRadius: '10px' }}>
+                            <Clock size={24} color="#d97706" />
                         </div>
                     </div>
                 </div>
+
+                {/* Main Content Area */}
+                <div style={{ 
+                    backgroundColor: '#ffffff', 
+                    borderRadius: '16px', 
+                    padding: '32px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)',
+                    border: '1px solid #f1f5f9'
+                }}>
 
                 {/* Controls / Tabs */}
                 <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
@@ -348,23 +303,23 @@ const AdminDashboard = () => {
                 
                 {/* Pending Designs Table */}
                 {!loading && !error && activeTab === 'designs' && (
-                    <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                    <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #f1f5f9' }}>
                         {designs.length === 0 ? (
                             <p style={{ padding: '32px', color: '#64748b', textAlign: 'center', margin: 0 }}>No designs are currently pending review.</p>
                         ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                 <thead>
                                     <tr style={{ background: '#f8fafc' }}>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>ID</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Name</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'right' }}>Total Cost</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Submitted At</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Action</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>ID</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Name</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700', textAlign: 'right' }}>Total Cost</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Submitted At</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {designs.map((design, index) => (
-                                        <tr key={design.id} style={{ background: '#ffffff', transition: 'background 0.2s' }}>
+                                        <tr key={design.id} style={{ background: '#ffffff', transition: 'background 0.2s', borderBottom: '1px solid #f1f5f9' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}>
                                             <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9', fontWeight: '500' }}>{design.id}</td>
                                             <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{design.name}</td>
                                             <td style={{ padding: '16px 24px', color: '#10b981', borderBottom: '1px solid #f1f5f9', fontWeight: '700', textAlign: 'right' }}>₱{Number(design.total_cost).toLocaleString()}</td>
@@ -392,46 +347,42 @@ const AdminDashboard = () => {
 
                 {/* Customer Orders Table */}
                 {!loading && !error && activeTab === 'orders' && (
-                    <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                    <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #f1f5f9' }}>
                         {orders.length === 0 ? (
                             <p style={{ padding: '32px', color: '#64748b', textAlign: 'center', margin: 0 }}>No orders have been placed yet.</p>
                         ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                 <thead>
                                     <tr style={{ background: '#f8fafc' }}>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Order #</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Customer</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Contact Info</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'right' }}>Total Price</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'center' }}>Payment</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Date</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Action</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Order #</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Customer</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Contact Info</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700', textAlign: 'right' }}>Total Price</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700', textAlign: 'center' }}>Payment</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Date</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {orders.map((order, index) => (
                                         <React.Fragment key={order.id}>
-                                            <tr style={{ background: '#ffffff', transition: 'background 0.2s' }}>
+                                            <tr style={{ background: '#ffffff', transition: 'background 0.2s', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}>
                                                 <td style={{ padding: '16px 24px', color: '#334155', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', fontWeight: '500' }}>{order.id}</td>
                                                 <td style={{ padding: '16px 24px', color: '#334155', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', fontWeight: '600' }}>{order.customer_name}</td>
                                                 <td style={{ padding: '16px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9' }}>
                                                     <div style={{ color: '#0f172a', fontWeight: '700', fontSize: '14px' }}>{order.customer_email}</div>
                                                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>{order.customer_address}</div>
                                                 </td>
-                                                <td style={{ padding: '16px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', fontWeight: '800', color: '#10b981', textAlign: 'right', fontSize: '16px' }}>₱{Number(order.total_price).toLocaleString()}</td>
+                                                <td style={{ padding: '16px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', fontWeight: '800', color: '#059669', textAlign: 'right', fontSize: '16px' }}>₱{Number(order.total_price).toLocaleString()}</td>
                                                 <td style={{ padding: '16px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', textAlign: 'center' }}>
                                                     {order.payment_method === 'cod' ? (
-                                                        <span style={{
-                                                            display: 'inline-block', padding: '4px 12px', borderRadius: 999,
-                                                            background: '#FEF3C7', color: '#92400E',
-                                                            fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em',
-                                                        }}>COD</span>
+                                                        <span className="inline-flex items-center gap-x-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 border border-amber-200/50">
+                                                            COD
+                                                        </span>
                                                     ) : (
-                                                        <span style={{
-                                                            display: 'inline-block', padding: '4px 12px', borderRadius: 999,
-                                                            background: '#D1FAE5', color: '#065F46',
-                                                            fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em',
-                                                        }}>Paid Online</span>
+                                                        <span className="inline-flex items-center gap-x-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-800 border border-green-200/50">
+                                                            Paid Online
+                                                        </span>
                                                     )}
                                                 </td>
                                                 <td style={{ padding: '16px 24px', color: '#64748b', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9' }}>{new Date(order.created_at).toLocaleDateString()}</td>
@@ -463,13 +414,13 @@ const AdminDashboard = () => {
                                             {/* Expanded Details Row */}
                                             {expandedOrder === order.id && (
                                                 <tr style={{ background: '#f8fafc' }}>
-                                                    <td colSpan="7" style={{ padding: '0 24px 24px 24px', borderBottom: '1px solid #e2e8f0' }}>
-                                                        <div style={{ background: '#ffffff', borderRadius: '8px', padding: '16px', border: '1px solid #e2e8f0', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)' }}>
+                                                    <td colSpan="7" style={{ padding: '0 24px 24px 24px', borderBottom: '1px solid #f1f5f9' }}>
+                                                        <div style={{ background: '#ffffff', borderRadius: '8px', padding: '16px', border: '1px solid #f1f5f9', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)' }}>
                                                             <h4 style={{ color: '#475569', margin: '0 0 12px 0', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Ordered Items</h4>
                                                             <ul style={{ margin: 0, paddingLeft: '20px', color: '#334155', fontSize: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '10px' }}>
                                                                 {order.items.map(item => (
                                                                     <li key={item.id}>
-                                                                        <span style={{ fontWeight: '700', color: '#0f172a' }}>{item.quantity}x</span> {item.item_name} <span style={{ color: '#10b981', fontWeight: '600' }}>(₱{Number(item.price_at_booking).toLocaleString()})</span>
+                                                                        <span style={{ fontWeight: '700', color: '#0f172a' }}>{item.quantity}x</span> {item.item_name} <span style={{ color: '#059669', fontWeight: '600' }}>(₱{Number(item.price_at_booking).toLocaleString()})</span>
                                                                     </li>
                                                                 ))}
                                                             </ul>
@@ -487,25 +438,25 @@ const AdminDashboard = () => {
 
                 {/* Attendance Tracking Table */}
                 {!loading && !error && activeTab === 'attendance' && (
-                    <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                    <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #f1f5f9' }}>
                         {attendanceLogs.length === 0 ? (
                             <p style={{ padding: '32px', color: '#64748b', textAlign: 'center', margin: 0 }}>No attendance logs recorded yet.</p>
                         ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                 <thead>
                                     <tr style={{ background: '#f8fafc' }}>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Staff Name</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Date</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Booking/Project ID</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Time In</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Time Out</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Total Hours</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Action</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Staff Name</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Date</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Booking/Project ID</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Time In</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Time Out</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Total Hours</th>
+                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {attendanceLogs.map((log) => (
-                                        <tr key={log.id} style={{ background: '#ffffff', transition: 'background 0.2s' }}>
+                                        <tr key={log.id} style={{ background: '#ffffff', transition: 'background 0.2s', borderBottom: '1px solid #f1f5f9' }} onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}>
                                             <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{log.staff_name}</td>
                                             <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9' }}>{log.clock_in_time ? new Date(log.clock_in_time).toLocaleDateString() : '-'}</td>
                                             <td style={{ padding: '16px 24px', color: '#64748b', borderBottom: '1px solid #f1f5f9', fontWeight: '500' }}>
@@ -515,32 +466,25 @@ const AdminDashboard = () => {
                                                 {log.clock_in_time ? new Date(log.clock_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                                             </td>
                                             <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9' }}>
-                                                {log.clock_out_time ? new Date(log.clock_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : <span style={{ color: '#f59e0b', fontWeight: '600' }}>Active Shift</span>}
+                                                {log.clock_out_time ? new Date(log.clock_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (
+                                                    <span className="inline-flex items-center gap-x-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200/50">
+                                                        Active Shift
+                                                    </span>
+                                                )}
                                             </td>
-                                            <td style={{ padding: '16px 24px', color: '#10b981', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}>
+                                            <td 
+                                                style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', fontWeight: '700' }}
+                                                className={Number(log.total_hours || 0) === 0 ? "text-slate-400" : "text-emerald-600"}
+                                            >
                                                 {log.total_hours !== null ? `${log.total_hours} hrs` : '-'}
                                             </td>
                                             <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
                                                 <button 
                                                     onClick={() => setSelectedAttendance(log)}
-                                                    style={{ 
-                                                        padding: '6px 12px', 
-                                                        display: 'flex', 
-                                                        alignItems: 'center', 
-                                                        gap: '6px', 
-                                                        cursor: 'pointer', 
-                                                        background: '#ffffff', 
-                                                        color: '#10b981', 
-                                                        border: '1px solid #a7f3d0', 
-                                                        borderRadius: '6px', 
-                                                        fontWeight: '600', 
-                                                        fontSize: '13px',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                    onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
-                                                    onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
+                                                    className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                                                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                                                 >
-                                                    <Eye size={14} /> View Proof
+                                                    View Proof
                                                 </button>
                                             </td>
                                         </tr>
@@ -551,6 +495,7 @@ const AdminDashboard = () => {
                     </div>
                 )}
             </div>
+        </div>
 
             {/* View Proof Modal Overlay */}
             {selectedAttendance && (

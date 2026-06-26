@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Home,
@@ -14,6 +14,7 @@ import {
   Settings,
   ChevronDown,
   Clock,
+  Sparkles,
 } from 'lucide-react';
 
 /* ─── Avatar: shows first letter of first name, with green gradient ─── */
@@ -219,6 +220,7 @@ const TopNavbar = () => {
   const userLinks = [
     { to: '/user-dashboard', icon: <LayoutDashboard size={16} />, label: 'Dashboard' },
     { to: '/studio',         icon: <Home size={16} />,             label: 'My 3D Studio' },
+    { to: '/ai-designer',    icon: <Sparkles size={16} />,         label: 'AI Designer' },
     { to: '/book-service',   icon: <CalendarPlus size={16} />,     label: 'Book a Service' },
     { to: '/my-bookings',    icon: <Calendar size={16} />,          label: 'My Bookings' },
     { to: '/my-orders',      icon: <Archive size={16} />,           label: 'My Orders' },
@@ -329,7 +331,7 @@ const TopNavbar = () => {
       }}>
 
         {/* ── LEFT: Brand ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <Link to={isAdminOrStaff ? (user.is_superuser ? '/admin-dashboard' : '/staff-dashboard') : '/user-dashboard'} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, textDecoration: 'none' }}>
           <div style={{
             width: 32, height: 32, borderRadius: 9,
             background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
@@ -343,93 +345,69 @@ const TopNavbar = () => {
           }}>
             Garden Studio
           </span>
-        </div>
+        </Link>
 
-        {/* ── CENTER: Nav Links ── */}
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-          overflowX: 'auto',
-          padding: '0 8px',
-          scrollbarWidth: 'none',
-        }}>
-          {links.map(({ to, icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) => `tn-nav-link${isActive ? ' active' : ''}`}
+        {/* Center-Right Navigation Links */}
+        {!isAdminOrStaff && (
+          <div className="flex items-center gap-6 ml-auto mr-8">
+            <NavLink 
+              to="/ai-designer" 
+              className={({ isActive }) => 
+                `text-sm ${isActive ? 'font-semibold text-emerald-600' : 'font-medium text-slate-600'} hover:text-emerald-600 transition-colors duration-150 no-underline`
+              }
             >
-              <span className="tn-dot" />
-              {icon}
-              <span className="tn-label">{label}</span>
+              Design with AI
             </NavLink>
-          ))}
-        </div>
-
-        {/* ── RIGHT: Profile ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-
-          {/* Role badge */}
-          {isAdminOrStaff && (
-            <div style={{
-              padding: '3px 10px',
-              borderRadius: 100,
-              background: '#dcfce7',
-              border: '1px solid #bbf7d0',
-              fontSize: 11,
-              fontWeight: 700,
-              color: '#16a34a',
-              letterSpacing: '0.2px',
-              whiteSpace: 'nowrap',
-            }} className="tn-label">
-              {user.is_superuser ? '⚡ Admin' : '🛡 Staff'}
-            </div>
-          )}
-
-          <div className="tn-divider" />
-
-          {/* Profile button + dropdown */}
-          <div ref={dropRef} style={{ position: 'relative' }}>
-            <button
-              className="tn-profile-btn"
-              onClick={() => setDropOpen(o => !o)}
-              aria-expanded={dropOpen}
-              aria-haspopup="true"
+            <NavLink 
+              to="/book-service" 
+              className={({ isActive }) => 
+                `text-sm ${isActive ? 'font-semibold text-emerald-600' : 'font-medium text-slate-600'} hover:text-emerald-600 transition-colors duration-150 no-underline`
+              }
             >
-              <Avatar user={user} />
-              <div className="tn-username" style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1,
-              }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                  {user.first_name || user.username}
-                </span>
-                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, lineHeight: 1.2 }}>
-                  {user.is_superuser ? 'Administrator' : user.is_staff ? 'Staff' : 'Member'}
-                </span>
-              </div>
-              <ChevronDown
-                size={14}
-                color="#94a3b8"
-                style={{
-                  transition: 'transform 0.2s',
-                  transform: dropOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                  marginLeft: 2,
-                }}
-              />
-            </button>
-
-            {dropOpen && (
-              <ProfileDropdown
-                user={user}
-                logoutUser={logoutUser}
-                onClose={() => setDropOpen(false)}
-              />
-            )}
+              Shop
+            </NavLink>
+            <NavLink 
+              to="/my-bookings" 
+              className={({ isActive }) => 
+                `text-sm ${isActive ? 'font-semibold text-emerald-600' : 'font-medium text-slate-600'} hover:text-emerald-600 transition-colors duration-150 no-underline`
+              }
+            >
+              My Bookings
+            </NavLink>
+            <NavLink 
+              to="/my-orders" 
+              className={({ isActive }) => 
+                `text-sm ${isActive ? 'font-semibold text-emerald-600' : 'font-medium text-slate-600'} hover:text-emerald-600 transition-colors duration-150 no-underline`
+              }
+            >
+              Order History
+            </NavLink>
           </div>
+        )}
+
+        {/* Far Right Profile Dropdown */}
+        <div ref={dropRef} style={{ position: 'relative', marginLeft: !isAdminOrStaff ? '0' : 'auto' }}>
+          <button
+            onClick={() => setDropOpen(!dropOpen)}
+            className="tn-profile-btn"
+            aria-expanded={dropOpen}
+          >
+            <Avatar user={user} />
+            <span className="tn-username" style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>
+              {user?.first_name || user?.username}
+            </span>
+            <ChevronDown size={14} style={{ color: '#94a3b8' }} />
+          </button>
+
+          {dropOpen && (
+            <ProfileDropdown
+              user={user}
+              logoutUser={logoutUser}
+              onClose={() => setDropOpen(false)}
+            />
+          )}
         </div>
+
       </nav>
     </>
   );

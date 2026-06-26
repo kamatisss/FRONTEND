@@ -30,7 +30,7 @@ const GREEN_BG    = "#f0fdf4";
 const GREEN_BORDER= "#d1fae5";
 
 const SURFACE     = "#ffffff";
-const PAGE_BG     = "#f3f4f6";        // same neutral-grey as the dashboard shell
+const PAGE_BG     = "#f8fafc";        // matches staff dashboard slate-50
 const BORDER      = "#e5e7eb";
 const TEXT_PRIMARY= "#111827";
 const TEXT_SECOND = "#6b7280";
@@ -524,24 +524,25 @@ const StaffAttendance = () => {
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: GREEN_BG,
-                border: `1px solid ${GREEN_BORDER}`,
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                background: GREEN,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
+                flexShrink: 0,
               }}
             >
-              <Clock size={22} color={GREEN} />
+              <Clock size={22} color="#fff" />
             </div>
             <div>
-              <h1 style={{ fontSize: 22, fontWeight: 800, color: TEXT_PRIMARY, margin: 0 }}>
-                Attendance Module
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: TEXT_PRIMARY, margin: 0, letterSpacing: "-0.02em" }}>
+                Attendance &amp; Time Tracking
               </h1>
-              <p style={{ fontSize: 13, color: TEXT_SECOND, marginTop: 2 }}>
-                Log daily presence, select project booking, and track coordinates.
+              <p style={{ fontSize: 13, color: TEXT_SECOND, marginTop: 3 }}>
+                Log daily presence, select project booking, and track your GPS coordinates.
               </p>
             </div>
           </div>

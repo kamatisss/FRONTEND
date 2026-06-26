@@ -1,612 +1,663 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDesign } from '../context/DesignContext';
 import { loadDesign } from '../services/api';
-import { Shield, ChevronDown, ChevronUp, Eye, CheckCircle, XCircle, ShoppingBag, Calendar, FileText, AlertTriangle, Truck } from 'lucide-react';
+import {
+  LayoutDashboard, Shield, Eye, CheckCircle2,
+  ShoppingBag, Calendar, FileText, AlertTriangle, Truck,
+  X, Package, Star, ArrowRight, Clock, ChevronDown, ChevronUp,
+  CheckCircle, XCircle,
+} from 'lucide-react';
 
-const StaffDashboard = () => {
-    const { authTokens } = useAuth();
-    const { dispatch } = useDesign();
-    const navigate = useNavigate();
-    const [designs, setDesigns] = useState([]);
-    const [orders, setOrders] = useState([]);
-    const [bookings, setBookings] = useState([]);
-    const [inventoryItems, setInventoryItems] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('designs');
-    const [expandedOrder, setExpandedOrder] = useState(null);
+/* ─── Toast notification system ─────────────────────────────────────────── */
+function useToast() {
+  const [toasts, setToasts] = useState([]);
+  const push = useCallback((msg, type = 'success') => {
+    const id = Date.now();
+    setToasts(t => [...t, { id, msg, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 4500);
+  }, []);
+  const dismiss = useCallback(id => setToasts(t => t.filter(x => x.id !== id)), []);
+  return { toasts, push, dismiss };
+}
 
-    useEffect(() => {
-        const fetchSubmittedDesigns = async () => {
-            try {
-                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/designs/submitted_designs/`, {
-                    headers: { 'Authorization': `Bearer ${authTokens.access}` }
-                });
-                if (!response.ok) throw new Error('Failed to fetch designs');
-                const data = await response.json();
-                setDesigns(data);
-            } catch (err) {
-                setError(err.message);
-            }
-        };
-
-        const fetchOrders = async () => {
-            try {
-                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/orders/`, {
-                    headers: { 'Authorization': `Bearer ${authTokens.access}` }
-                });
-                if (!response.ok) throw new Error('Failed to fetch orders');
-                const data = await response.json();
-                setOrders(data);
-            } catch (err) {
-                setError(err.message);
-            }
-        };
-
-        const fetchBookings = async () => {
-            try {
-                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/bookings/`, {
-                    headers: { 'Authorization': `Bearer ${authTokens.access}` }
-                });
-                if (!response.ok) throw new Error('Failed to fetch bookings');
-                const data = await response.json();
-                setBookings(data);
-            } catch (err) {
-                setError(err.message);
-            }
-        };
-
-        const fetchInventory = async () => {
-            try {
-                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/inventory/`, {
-                    headers: { 'Authorization': `Bearer ${authTokens.access}` }
-                });
-                if (!response.ok) throw new Error('Failed to fetch inventory');
-                const data = await response.json();
-                setInventoryItems(data);
-            } catch (err) {
-                setError(err.message);
-            }
-        };
-
-        if (authTokens) {
-            Promise.all([
-                fetchSubmittedDesigns(),
-                fetchOrders(),
-                fetchBookings(),
-                fetchInventory()
-            ]).finally(() => setLoading(false));
-        }
-    }, [authTokens]);
-
-    const handleUpdateStatus = async (id, status) => {
-        try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/designs/${id}/update_status/`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authTokens.access}`
-                },
-                body: JSON.stringify({ status })
-            });
-
-            if (response.ok) {
-                setDesigns(designs.filter(d => d.id !== id));
-            }
-        } catch (err) {
-            console.error('Failed to update status', err);
-        }
-    };
-
-    const handleUpdateOrderStatus = async (orderId, newStatus) => {
-        try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/orders/${orderId}/update_status/`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authTokens.access}`
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-
-            if (response.ok) {
-                const ordRes = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/orders/`, {
-                    headers: { 'Authorization': `Bearer ${authTokens.access}` }
-                });
-                if (ordRes.ok) {
-                    const ordData = await ordRes.json();
-                    setOrders(ordData);
-                }
-            } else {
-                const data = await response.json();
-                alert("Failed to update status: " + (data.error || JSON.stringify(data)));
-            }
-        } catch (err) {
-            console.error('Failed to update order status', err);
-            alert('Failed to update order status');
-        }
-    };
-
-    const getOrderStatusStyle = (status) => {
-        const base = {
-            display: 'inline-block',
-            padding: '4px 12px',
-            borderRadius: 999,
-            fontSize: '12px',
-            fontWeight: 700,
-            letterSpacing: '0.02em',
-        };
-        switch (status) {
-            case 'Pending':
-                return { ...base, background: '#FEF3C7', color: '#92400E' };
-            case 'Paid':
-                return { ...base, background: '#D1FAE5', color: '#065F46' };
-            case 'Shipped':
-                return { ...base, background: '#DBEAFE', color: '#1E40AF' };
-            case 'Out for Delivery':
-                return { ...base, background: '#E0F2FE', color: '#0369A1' };
-            case 'Delivered':
-                return { ...base, background: '#D1FAE5', color: '#065F46' };
-            case 'Cancelled':
-                return { ...base, background: '#FEE2E2', color: '#B91C1C' };
-            default:
-                return { ...base, background: '#F1F5F9', color: '#475569' };
-        }
-    };
-
-    const handleViewDesign = async (id) => {
-        try {
-            const design = await loadDesign(id);
-            dispatch({
-                type: 'LOAD_DESIGN',
-                payload: {
-                    designId: design.id,
-                    designName: design.name,
-                    depthData: design.depth_data,
-                    placedItems: (design.placed_items || []).map((item, idx) => ({
-                        id: Date.now() + idx,
-                        productId: item.product_id,
-                        name: item.name,
-                        modelType: item.model_type,
-                        price: item.price,
-                        position: item.position,
-                        rotation: item.rotation,
-                        scale: item.scale,
-                    })),
-                    dimensions: design.dimensions || { width: 10, length: 15, terrainType: 'flat' },
-                    terrainHeight: design.terrain_height || 1.5,
-                    timeOfDay: design.time_of_day || 14,
-                },
-            });
-            navigate('/studio');
-        } catch (err) {
-            console.error('Failed to load design for viewing:', err);
-            alert('Could not load the design.');
-        }
-    };
-
-    const toggleOrderDetails = (orderId) => {
-        if (expandedOrder === orderId) {
-            setExpandedOrder(null);
-        } else {
-            setExpandedOrder(orderId);
-        }
-    };
-
-    const pendingDesignsCount = designs.length;
-
-    const localDate = new Date();
-    const yyyy = localDate.getFullYear();
-    const mm = String(localDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(localDate.getDate()).padStart(2, '0');
-    const todayStr = `${yyyy}-${mm}-${dd}`;
-    const todaysBookingsCount = bookings.filter(b => b.scheduled_date === todayStr).length;
-
-    const pendingOrdersCount = orders.filter(order => order.status && order.status.toLowerCase() === 'pending').length;
-    const lowStockAlertsCount = inventoryItems.filter(item => Number(item.stock_quantity || 0) < 10).length;
-
-    return (
-        <div className="px-6 pr-6" style={{ backgroundColor: '#f1f5f9', minHeight: '100%', padding: '40px', fontFamily: "'Inter', sans-serif" }}>
-            <div className="px-6 pr-6" style={{ 
-                maxWidth: '1200px', 
-                margin: '0 auto', 
-                backgroundColor: '#ffffff', 
-                borderRadius: '16px', 
-                padding: '32px',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)'
-            }}>
-                
-                {/* Hero Section */}
-                <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center',
-                    marginBottom: '32px'
-                }}>
-                    <Shield size={36} color="#10b981" style={{ marginRight: '20px' }} />
-                    <div>
-                        <h1 style={{ color: '#1e293b', fontSize: '28px', margin: '0 0 4px 0', fontWeight: '800' }}>Staff Dashboard</h1>
-                        <p style={{ color: '#64748b', margin: 0, fontSize: '15px' }}>Review submitted garden designs</p>
-                    </div>
-                </div>
-
-                {/* Analytics Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-6 mt-4" style={{ marginTop: '36px', paddingTop: '24px', marginBottom: '32px' }}>
-                    {/* Today's Bookings */}
-                    <div 
-                        style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                            transition: 'all 0.2s ease-in-out',
-                            cursor: 'default'
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
-                        }}
-                    >
-                        <div>
-                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Today's Bookings</p>
-                            <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{todaysBookingsCount}</h3>
-                        </div>
-                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
-                            <Calendar size={24} color="#10b981" />
-                        </div>
-                    </div>
-
-                    {/* Pending Orders */}
-                    <div 
-                        style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                            transition: 'all 0.2s ease-in-out',
-                            cursor: 'default'
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
-                        }}
-                    >
-                        <div>
-                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pending Orders</p>
-                            <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{pendingOrdersCount}</h3>
-                        </div>
-                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
-                            <ShoppingBag size={24} color="#10b981" />
-                        </div>
-                    </div>
-
-                    {/* Pending Designs */}
-                    <div 
-                        style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                            transition: 'all 0.2s ease-in-out',
-                            cursor: 'default'
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
-                        }}
-                    >
-                        <div>
-                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pending Designs</p>
-                            <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{pendingDesignsCount}</h3>
-                        </div>
-                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
-                            <FileText size={24} color="#10b981" />
-                        </div>
-                    </div>
-
-                    {/* Low Stock Alerts */}
-                    <div 
-                        style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                            transition: 'all 0.2s ease-in-out',
-                            cursor: 'default'
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
-                        }}
-                    >
-                        <div>
-                            <p style={{ color: '#64748b', fontSize: '13px', fontWeight: '700', margin: '0 0 6px 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Low Stock Alerts</p>
-                            <h3 style={{ color: '#1e293b', fontSize: '24px', fontWeight: '800', margin: 0 }}>{lowStockAlertsCount}</h3>
-                        </div>
-                        <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px' }}>
-                            <AlertTriangle size={24} color="#10b981" />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Controls / Tabs */}
-                <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-                    <button 
-                        onClick={() => setActiveTab('designs')} 
-                        style={{ 
-                            padding: '12px 24px', 
-                            cursor: 'pointer', 
-                            background: activeTab === 'designs' ? '#10b981' : '#f1f5f9', 
-                            color: activeTab === 'designs' ? 'white' : '#475569', 
-                            border: 'none', 
-                            borderRadius: '8px', 
-                            fontWeight: '700',
-                            fontSize: '15px',
-                            transition: 'all 0.2s',
-                            boxShadow: activeTab === 'designs' ? '0 4px 14px rgba(16,185,129,0.3)' : 'none'
-                        }}
-                    >
-                        Pending Designs
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('orders')} 
-                        style={{ 
-                            padding: '12px 24px', 
-                            cursor: 'pointer', 
-                            background: activeTab === 'orders' ? '#10b981' : '#f1f5f9', 
-                            color: activeTab === 'orders' ? 'white' : '#475569', 
-                            border: 'none', 
-                            borderRadius: '8px', 
-                            fontWeight: '700',
-                            fontSize: '15px',
-                            transition: 'all 0.2s',
-                            boxShadow: activeTab === 'orders' ? '0 4px 14px rgba(16,185,129,0.3)' : 'none'
-                        }}
-                    >
-                        Customer Orders
-                    </button>
-                </div>
-
-                {loading && <p style={{ color: '#64748b' }}>Loading data...</p>}
-                {error && <p style={{ color: '#ef4444' }}>{error}</p>}
-                
-                {/* Pending Designs Table */}
-                {!loading && !error && activeTab === 'designs' && (
-                    designs.length === 0 ? (
-                        <p style={{ padding: '32px', color: '#64748b', textAlign: 'center', margin: 0, border: '1px solid #e2e8f0', borderRadius: '12px', backgroundColor: '#ffffff' }}>No designs are currently pending review.</p>
-                    ) : (
-                        <div className="w-full overflow-x-auto" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                            <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '900px', borderCollapse: 'collapse', textAlign: 'left' }}>
-                                <thead>
-                                    <tr style={{ background: '#f8fafc' }}>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>ID</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Name</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'right' }}>Total Cost</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700' }}>Submitted At</th>
-                                        <th style={{ padding: '16px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', minWidth: '260px' }}>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {designs.map((design, index) => (
-                                        <tr key={design.id} style={{ background: '#ffffff', transition: 'background 0.2s' }}>
-                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9', fontWeight: '500' }}>{design.id}</td>
-                                            <td style={{ padding: '16px 24px', color: '#334155', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{design.name}</td>
-                                            <td style={{ padding: '16px 24px', color: '#10b981', borderBottom: '1px solid #f1f5f9', fontWeight: '700', textAlign: 'right' }}>₱{Number(design.total_cost).toLocaleString()}</td>
-                                            <td style={{ padding: '16px 24px', color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>{new Date(design.updated_at).toLocaleDateString()}</td>
-                                            <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', minWidth: '260px' }}>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button onClick={() => handleViewDesign(design.id)} style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: '#ffffff', color: '#3b82f6', border: '1px solid #bfdbfe', borderRadius: '6px', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'} onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}>
-                                                        <Eye size={14} /> View
-                                                    </button>
-                                                    <button onClick={() => handleUpdateStatus(design.id, 'approved')} style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#059669'} onMouseLeave={e => e.currentTarget.style.background = '#10b981'}>
-                                                        <CheckCircle size={14} /> Approve
-                                                    </button>
-                                                    <button onClick={() => handleUpdateStatus(design.id, 'rejected')} style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#dc2626'} onMouseLeave={e => e.currentTarget.style.background = '#ef4444'}>
-                                                        <XCircle size={14} /> Reject
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )
-                )}
-
-                {/* Customer Orders Table */}
-                {!loading && !error && activeTab === 'orders' && (
-                    orders.length === 0 ? (
-                        <p style={{ padding: '32px', color: '#64748b', textAlign: 'center', margin: 0, border: '1px solid #e2e8f0', borderRadius: '12px', backgroundColor: '#ffffff' }}>No orders have been placed yet.</p>
-                    ) : (
-                        <div className="w-full overflow-x-auto" style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                            <table className="min-w-full divide-y divide-gray-200 table-fixed" style={{ minWidth: '1000px', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
-                                <thead>
-                                    <tr style={{ background: '#f8fafc' }}>
-                                        <th className="text-left" style={{ padding: '12px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'left' }}>Order #</th>
-                                        <th className="max-w-[150px] text-left" style={{ padding: '12px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'left' }}>Customer</th>
-                                        <th className="max-w-[150px] text-left" style={{ padding: '12px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'left' }}>Contact Info</th>
-                                        <th className="text-right" style={{ padding: '12px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'right' }}>Total Price</th>
-                                        <th className="text-center" style={{ padding: '12px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'center' }}>Payment</th>
-                                        <th className="text-center" style={{ padding: '12px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'center' }}>Status</th>
-                                        <th className="text-left" style={{ padding: '12px 24px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', textAlign: 'left' }}>Date</th>
-                                        <th className="w-[140px] min-w-[140px] text-left" style={{ padding: '12px 12px', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', fontWeight: '700', width: '140px', minWidth: '140px', textAlign: 'left' }}>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {orders.map((order, index) => (
-                                        <React.Fragment key={order.id}>
-                                            <tr style={{ background: '#ffffff', transition: 'background 0.2s' }}>
-                                                <td className="py-3 text-left" style={{ padding: '12px 24px', color: '#334155', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', fontWeight: '500', textAlign: 'left' }}>{order.id}</td>
-                                                <td className="max-w-[150px] py-3 text-left" style={{ padding: '12px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', textAlign: 'left' }}>
-                                                    <div className="max-w-[150px] truncate block" style={{ color: '#334155', fontWeight: '600', fontSize: '14px' }}>{order.customer_name}</div>
-                                                </td>
-                                                <td className="max-w-[150px] py-3 text-left" style={{ padding: '12px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', textAlign: 'left' }}>
-                                                    <div className="max-w-[150px] truncate block" style={{ color: '#0f172a', fontWeight: '700', fontSize: '14px' }}>{order.customer_email}</div>
-                                                    <div className="max-w-[150px] truncate block" style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>{order.customer_address}</div>
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 text-right" style={{ padding: '12px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', fontWeight: '800', color: '#10b981', textAlign: 'right', fontSize: '16px', whiteSpace: 'nowrap' }}>₱{Number(order.total_price).toLocaleString()}</td>
-                                                <td className="whitespace-nowrap py-3 text-center" style={{ padding: '12px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                    {order.payment_method === 'cod' ? (
-                                                        <span style={{
-                                                            display: 'inline-block', padding: '4px 12px', borderRadius: 999,
-                                                            background: '#FEF3C7', color: '#92400E',
-                                                            fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em',
-                                                            whiteSpace: 'nowrap'
-                                                        }}>COD</span>
-                                                    ) : (
-                                                        <span style={{
-                                                            display: 'inline-block', padding: '4px 12px', borderRadius: 999,
-                                                            background: '#D1FAE5', color: '#065F46',
-                                                            fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em',
-                                                            whiteSpace: 'nowrap'
-                                                        }}>Paid Online</span>
-                                                    )}
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 text-center" style={{ padding: '12px 24px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                    <span style={getOrderStatusStyle(order.status)}>
-                                                        {order.status}
-                                                    </span>
-                                                </td>
-                                                <td className="whitespace-nowrap py-3 text-left" style={{ padding: '12px 24px', color: '#64748b', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', whiteSpace: 'nowrap', textAlign: 'left' }}>{new Date(order.created_at).toLocaleDateString()}</td>
-                                                <td className="w-[140px] min-w-[140px] py-3 text-left" style={{ padding: '12px 12px', borderBottom: expandedOrder === order.id ? 'none' : '1px solid #f1f5f9', width: '140px', minWidth: '140px', textAlign: 'left' }}>
-                                                    <button 
-                                                        onClick={() => toggleOrderDetails(order.id)}
-                                                        style={{ 
-                                                            padding: '6px 10px', 
-                                                            display: 'flex', 
-                                                            alignItems: 'center', 
-                                                            gap: '6px', 
-                                                            cursor: 'pointer', 
-                                                            background: '#ffffff', 
-                                                            color: '#334155', 
-                                                            border: '1px solid #cbd5e1', 
-                                                            borderRadius: '8px', 
-                                                            fontWeight: '600', 
-                                                            fontSize: '13px',
-                                                            transition: 'all 0.2s',
-                                                            whiteSpace: 'nowrap'
-                                                        }}
-                                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; }}
-                                                        onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                                                    >
-                                                        View Details 
-                                                        {expandedOrder === order.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            {/* Expanded Details Row */}
-                                            {expandedOrder === order.id && (
-                                                <tr style={{ background: '#f8fafc' }}>
-                                                    <td colSpan="8" style={{ padding: '0 24px 24px 24px', borderBottom: '1px solid #e2e8f0' }}>
-                                                        <div style={{ background: '#ffffff', borderRadius: '8px', padding: '16px', border: '1px solid #e2e8f0', boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)' }}>
-                                                            <h4 style={{ color: '#475569', margin: '0 0 12px 0', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Ordered Items</h4>
-                                                            <ul style={{ margin: 0, paddingLeft: '20px', color: '#334155', fontSize: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '10px' }}>
-                                                                {order.items.map(item => (
-                                                                    <li key={item.id}>
-                                                                        <span style={{ fontWeight: '700', color: '#0f172a' }}>{item.quantity}x</span> {item.item_name} <span style={{ color: '#10b981', fontWeight: '600' }}>(₱{Number(item.price_at_booking).toLocaleString()})</span>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-
-                                                            {/* Update Fulfillment Status Control Panel */}
-                                                            <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
-                                                                <h4 style={{ color: '#475569', margin: '0 0 12px 0', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>Update Fulfillment Status</h4>
-                                                                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                                                    
-                                                                    <div style={{ marginRight: '16px', fontSize: '13.5px', color: '#64748b' }}>
-                                                                        Current Order Status: <strong style={{ color: '#0f172a' }}>{order.status}</strong>
-                                                                        {order.payment_status && (
-                                                                            <> · Payment: <strong style={{ color: order.payment_status === 'Paid' ? '#10b981' : '#f59e0b' }}>{order.payment_status}</strong></>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {(order.status === 'Pending' || order.status === 'Paid') && (
-                                                                        <button 
-                                                                            onClick={() => handleUpdateOrderStatus(order.id, 'Shipped')} 
-                                                                            style={{ padding: '8px 16px', background: '#3b82f6', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.2s', boxShadow: '0 2px 4px rgba(59,130,246,0.15)' }}
-                                                                            onMouseEnter={e => e.currentTarget.style.background = '#2563eb'}
-                                                                            onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}
-                                                                        >
-                                                                            <Truck size={14} /> Approve & Ship
-                                                                        </button>
-                                                                    )}
-
-                                                                    {(order.status === 'Pending' || order.status === 'Paid' || order.status === 'Shipped' || order.status === 'Out for Delivery') && (
-                                                                        <button 
-                                                                            onClick={() => handleUpdateOrderStatus(order.id, 'Delivered')} 
-                                                                            style={{ padding: '8px 16px', background: '#10b981', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.2s', boxShadow: '0 2px 4px rgba(16,185,129,0.15)' }}
-                                                                            onMouseEnter={e => e.currentTarget.style.background = '#059669'}
-                                                                            onMouseLeave={e => e.currentTarget.style.background = '#10b981'}
-                                                                        >
-                                                                            <CheckCircle size={14} /> Mark as Delivered
-                                                                        </button>
-                                                                    )}
-
-                                                                    {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
-                                                                        <button 
-                                                                            onClick={() => {
-                                                                                if (window.confirm("Are you sure you want to cancel this order? This action cannot be undone.")) {
-                                                                                    handleUpdateOrderStatus(order.id, 'Cancelled');
-                                                                                }
-                                                                            }} 
-                                                                            style={{ padding: '8px 16px', background: '#ffffff', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
-                                                                            onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.borderColor = '#ef4444'; }}
-                                                                            onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#fca5a5'; }}
-                                                                        >
-                                                                            <XCircle size={14} /> Cancel Order
-                                                                        </button>
-                                                                    )}
-
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </React.Fragment>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )
-                )}
-            </div>
+function ToastStack({ toasts, dismiss }) {
+  if (!toasts.length) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+      {toasts.map(t => (
+        <div
+          key={t.id}
+          className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold min-w-[260px] max-w-sm border transition-all
+            ${t.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'}`}
+        >
+          {t.type === 'success'
+            ? <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
+            : <AlertTriangle size={16} className="shrink-0 text-red-500" />}
+          <span className="flex-1">{t.msg}</span>
+          <button onClick={() => dismiss(t.id)} className="shrink-0 opacity-50 hover:opacity-100 cursor-pointer bg-transparent border-none p-0">
+            <X size={14} />
+          </button>
         </div>
-    );
+      ))}
+    </div>
+  );
+}
+
+/* ─── Skeleton loader ────────────────────────────────────────────────────── */
+function SkeletonCard() {
+  return (
+    <div className="border border-slate-100 rounded-2xl bg-white p-5 shadow-sm animate-pulse">
+      <div className="w-full h-36 bg-slate-100 rounded-xl mb-4" />
+      <div className="h-4 bg-slate-100 rounded w-3/4 mb-2" />
+      <div className="h-3 bg-slate-100 rounded w-1/2 mb-4" />
+      <div className="space-y-2">
+        <div className="h-3 bg-slate-100 rounded" />
+        <div className="h-3 bg-slate-100 rounded" />
+        <div className="h-3 bg-slate-100 rounded w-4/5" />
+      </div>
+      <div className="mt-5 h-9 bg-slate-100 rounded-xl" />
+    </div>
+  );
+}
+
+/* ─── Status badge ───────────────────────────────────────────────────────── */
+const STATUS_STYLES = {
+  Pending:          'bg-amber-50  text-amber-700  border-amber-200',
+  Paid:             'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Shipped:          'bg-blue-50   text-blue-700   border-blue-200',
+  'Out for Delivery':'bg-sky-50   text-sky-700    border-sky-200',
+  Delivered:        'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Cancelled:        'bg-red-50    text-red-700    border-red-200',
+  Confirmed:        'bg-blue-50   text-blue-700   border-blue-200',
+  'In Progress':    'bg-amber-50  text-amber-700  border-amber-200',
+  'Awaiting Review':'bg-purple-50 text-purple-700 border-purple-200',
 };
+
+function Badge({ label }) {
+  const cls = STATUS_STYLES[label] || 'bg-slate-100 text-slate-600 border-slate-200';
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────────── */
+function EmptyState({ icon: Icon, title, sub }) {
+  return (
+    <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white border border-slate-100 rounded-2xl">
+      <div className="p-4 bg-slate-50 rounded-2xl mb-4">
+        <Icon size={36} className="text-slate-300" strokeWidth={1.5} />
+      </div>
+      <p className="text-slate-700 font-semibold text-base">{title}</p>
+      <p className="text-slate-400 text-sm mt-1">{sub}</p>
+    </div>
+  );
+}
+
+/* ─── Stat card ──────────────────────────────────────────────────────────── */
+function StatCard({ icon: Icon, label, value, iconBg, iconColor, border }) {
+  return (
+    <div className={`bg-white rounded-2xl p-5 shadow-sm border flex items-center justify-between gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 ${border}`}>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">{label}</p>
+        <p className="text-3xl font-extrabold text-slate-800 leading-none">{value}</p>
+      </div>
+      <div className={`p-3 rounded-xl ${iconBg} shrink-0`}>
+        <Icon size={22} className={iconColor} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main component ─────────────────────────────────────────────────────── */
+const StaffDashboard = () => {
+  const { authTokens, user } = useAuth();
+  const { dispatch } = useDesign();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { toasts, push: toast, dismiss } = useToast();
+
+  const [designs,        setDesigns]        = useState([]);
+  const [allDesigns,     setAllDesigns]     = useState([]);
+  const [orders,         setOrders]         = useState([]);
+  const [bookings,       setBookings]       = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [activeTab,      setActiveTab]      = useState('overview');
+  const [expandedOrder,  setExpandedOrder]  = useState(null);
+  const [actionLoading,  setActionLoading]  = useState(null);
+
+  const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+  /* Sync tab with ?tab= URL param */
+  useEffect(() => {
+    const tab = new URLSearchParams(location.search).get('tab');
+    if (tab && ['overview', 'designs', 'bookings', 'orders'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
+  const headers = { Authorization: `Bearer ${authTokens?.access}` };
+
+  useEffect(() => {
+    if (!authTokens) return;
+    const get = (url) => fetch(`${API}${url}`, { headers }).then(r => r.ok ? r.json() : Promise.reject());
+    Promise.all([
+      get('/designs/submitted_designs/').then(setDesigns).catch(() => {}),
+      get('/orders/').then(setOrders).catch(() => {}),
+      get('/bookings/').then(setBookings).catch(() => {}),
+      get('/inventory/').then(setInventoryItems).catch(() => {}),
+      get('/designs/').then(setAllDesigns).catch(() => {}),
+    ]).finally(() => setLoading(false));
+  }, [authTokens]);
+
+  /* ── Derived counts ── */
+  const today = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  })();
+  const pendingDesigns   = designs.length;
+  const todaysBookings   = bookings.filter(b => b.scheduled_date === today).length;
+  const pendingOrders    = orders.filter(o => o.status?.toLowerCase() === 'pending').length;
+  const lowStock         = inventoryItems.filter(i => Number(i.stock_quantity || 0) < 10).length;
+
+  /* ── Tab definitions ── */
+  const TABS = [
+    { key: 'overview',  label: 'Overview',  Icon: LayoutDashboard, badge: null },
+    { key: 'designs',   label: 'Designs',   Icon: Star,            badge: pendingDesigns || null },
+    { key: 'bookings',  label: 'Bookings',  Icon: Calendar,        badge: todaysBookings || null },
+    { key: 'orders',    label: 'Orders',    Icon: Package,         badge: pendingOrders || null },
+  ];
+
+  /* ── API actions ── */
+  const updateDesignStatus = async (id, status) => {
+    setActionLoading(id);
+    try {
+      const r = await fetch(`${API}/designs/${id}/update_status/`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (r.ok) {
+        setDesigns(d => d.filter(x => x.id !== id));
+        toast(`Design ${status === 'approved' ? 'approved' : 'rejected'} successfully.`);
+      } else {
+        toast('Failed to update design status.', 'error');
+      }
+    } catch {
+      toast('Network error — please try again.', 'error');
+    }
+    setActionLoading(null);
+  };
+
+  const refreshOrders = async () => {
+    const r = await fetch(`${API}/orders/`, { headers });
+    if (r.ok) setOrders(await r.json());
+  };
+
+  const updateOrderStatus = async (id, status) => {
+    setActionLoading(id);
+    try {
+      const r = await fetch(`${API}/orders/${id}/update_status/`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (r.ok) { await refreshOrders(); toast(`Order marked as ${status}.`); }
+      else       { const d = await r.json(); toast(d.error || 'Failed to update order.', 'error'); }
+    } catch {
+      toast('Network error — please try again.', 'error');
+    }
+    setActionLoading(null);
+  };
+
+  const refreshBookings = async () => {
+    const r = await fetch(`${API}/bookings/`, { headers });
+    if (r.ok) setBookings(await r.json());
+  };
+
+  const updateBookingStatus = async (id, status) => {
+    setActionLoading(id);
+    try {
+      const r = await fetch(`${API}/bookings/${id}/update_status/`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (r.ok) { await refreshBookings(); toast(`Booking updated to ${status}.`); }
+      else       { toast('Failed to update booking.', 'error'); }
+    } catch {
+      toast('Network error — please try again.', 'error');
+    }
+    setActionLoading(null);
+  };
+
+  const handleViewDesign = async (id) => {
+    try {
+      const design = await loadDesign(id);
+      dispatch({
+        type: 'LOAD_DESIGN',
+        payload: {
+          designId: design.id,
+          designName: design.name,
+          depthData: design.depth_data,
+          placedItems: (design.placed_items || []).map((item, idx) => ({
+            id: Date.now() + idx,
+            productId: item.product_id,
+            name: item.name,
+            modelType: item.model_type,
+            price: item.price,
+            position: item.position,
+            rotation: item.rotation,
+            scale: item.scale,
+          })),
+          dimensions: design.dimensions || { width: 10, length: 15, terrainType: 'flat' },
+          terrainHeight: design.terrain_height || 1.5,
+          timeOfDay: design.time_of_day || 14,
+        },
+      });
+      navigate('/studio');
+    } catch {
+      toast('Could not load the design for preview.', 'error');
+    }
+  };
+
+  const getLinkedDesign = (identifier) =>
+    allDesigns.find(d =>
+      d.customer_name?.toLowerCase() === identifier?.toLowerCase() ||
+      d.name?.toLowerCase().includes(identifier?.toLowerCase())
+    );
+
+  const getLotProfile = (booking) => {
+    const d = allDesigns.find(x => x.id === booking.design);
+    return d?.dimensions
+      ? `${d.dimensions.width}m × ${d.dimensions.length}m (${d.dimensions.terrainType || 'flat'})`
+      : 'Consultation Lot';
+  };
+
+  const getThumbnail = (booking) => {
+    const d = allDesigns.find(x => x.id === booking.design);
+    return d?.original_image_url || booking.design_details?.image_url || null;
+  };
+
+  /* ── Greeting ── */
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const dateStr = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  /* ────────────────────────────── RENDER ────────────────────────────────── */
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+
+        {/* ── Page Header ── */}
+        <div className="flex items-start justify-between mb-8 gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-600 rounded-2xl shadow-sm">
+              <Shield size={24} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-none mb-1">
+                Staff Portal
+              </h1>
+              <p className="text-slate-500 text-sm">{greeting}, <span className="font-semibold text-slate-700">{user?.first_name || user?.username || 'Staff'}</span> · {dateStr}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Stat Cards ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatCard icon={Calendar}      label="Today's Bookings"  value={todaysBookings}  iconBg="bg-emerald-50"  iconColor="text-emerald-600" border="border-slate-100" />
+          <StatCard icon={Package}       label="Pending Orders"    value={pendingOrders}   iconBg="bg-blue-50"     iconColor="text-blue-600"    border="border-slate-100" />
+          <StatCard icon={FileText}      label="Pending Reviews"   value={pendingDesigns}  iconBg="bg-purple-50"   iconColor="text-purple-600"  border="border-slate-100" />
+          <StatCard icon={AlertTriangle} label="Low Stock Alerts"  value={lowStock}        iconBg="bg-red-50"      iconColor="text-red-500"     border="border-slate-100" />
+        </div>
+
+        {/* ── Tab Navigation Bar ── */}
+        <div className="flex items-center gap-1 mb-6 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm w-fit">
+          {TABS.map(({ key, label, Icon, badge }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer border-none
+                ${activeTab === key
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 bg-transparent'}`}
+            >
+              <Icon size={15} />
+              <span>{label}</span>
+              {badge != null && (
+                <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold
+                  ${activeTab === key ? 'bg-white/25 text-white' : 'bg-emerald-100 text-emerald-700'}`}>
+                  {badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Loading skeletons ── */}
+        {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        )}
+
+        {/* ── Overview Tab ── */}
+        {!loading && activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Welcome banner */}
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white shadow-sm">
+              <h2 className="text-xl font-extrabold mb-1">Welcome back, {user?.first_name || user?.username || 'Staff Member'}!</h2>
+              <p className="text-emerald-100 text-sm">Here is your daily operational summary for {dateStr}.</p>
+            </div>
+
+            {/* Quick action cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {[
+                {
+                  icon: Star, iconBg: 'bg-purple-100', iconColor: 'text-purple-600',
+                  title: 'Design Queue', tab: 'designs',
+                  body: pendingDesigns
+                    ? `${pendingDesigns} layout${pendingDesigns > 1 ? 's' : ''} awaiting your review.`
+                    : 'All design reviews are up to date.',
+                  cta: 'Review Designs',
+                },
+                {
+                  icon: Calendar, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600',
+                  title: 'Appointments', tab: 'bookings',
+                  body: todaysBookings
+                    ? `${todaysBookings} consultation${todaysBookings > 1 ? 's' : ''} scheduled for today.`
+                    : 'No consultations scheduled for today.',
+                  cta: 'View Bookings',
+                },
+                {
+                  icon: Package, iconBg: 'bg-blue-100', iconColor: 'text-blue-600',
+                  title: 'Order Fulfillment', tab: 'orders',
+                  body: pendingOrders
+                    ? `${pendingOrders} order${pendingOrders > 1 ? 's' : ''} pending fulfillment.`
+                    : 'No orders pending fulfillment.',
+                  cta: 'Manage Orders',
+                },
+              ].map(({ icon: Icon, iconBg, iconColor, title, tab, body, cta }) => (
+                <div key={tab} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                  <div>
+                    <div className={`inline-flex p-2.5 rounded-xl ${iconBg} mb-3`}>
+                      <Icon size={18} className={iconColor} />
+                    </div>
+                    <h4 className="font-bold text-slate-800 mb-1">{title}</h4>
+                    <p className="text-slate-500 text-sm leading-relaxed mb-4">{body}</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab(tab)}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-900 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors cursor-pointer border-none"
+                  >
+                    {cta} <ArrowRight size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Low stock alert strip */}
+            {lowStock > 0 && (
+              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                <AlertTriangle size={18} className="text-red-500 shrink-0" />
+                <p className="text-sm text-red-700 font-medium">
+                  <span className="font-bold">{lowStock} inventory item{lowStock > 1 ? 's' : ''}</span> {lowStock > 1 ? 'are' : 'is'} running low (under 10 units). Check the inventory manager.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Designs Tab ── */}
+        {!loading && activeTab === 'designs' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {designs.length === 0 ? (
+              <EmptyState icon={Star} title="All caught up!" sub="No design layouts are currently pending review." />
+            ) : designs.map(design => {
+              const w = design.dimensions?.width || 10;
+              const l = design.dimensions?.length || 15;
+              const terrain = design.dimensions?.terrainType || 'flat';
+              const isAct = actionLoading === design.id;
+              return (
+                <div key={design.id} className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                  {/* Thumbnail */}
+                  <div className="relative w-full h-40 bg-slate-50">
+                    {design.original_image_url
+                      ? <img src={design.original_image_url} alt={design.name} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-300">
+                          <FileText size={36} strokeWidth={1} /><span className="text-xs">No reference image</span>
+                        </div>
+                    }
+                    <div className="absolute top-2 right-2"><Badge label="Awaiting Review" /></div>
+                  </div>
+
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="font-bold text-slate-800 truncate mb-0.5">{design.name}</h3>
+                    <p className="text-xs text-slate-400 mb-4">#{design.id} · {new Date(design.updated_at).toLocaleDateString()}</p>
+
+                    <div className="space-y-2 text-sm mb-5">
+                      <Row label="Customer"      value={design.customer_name || 'Anonymous'} />
+                      <Row label="Lot"           value={`${w}m × ${l}m (${terrain})`} />
+                      <Row label="Estimate"      value={`₱${Number(design.total_cost).toLocaleString()}`} valueClass="font-bold text-emerald-600" />
+                    </div>
+
+                    <div className="flex flex-col gap-2 mt-auto">
+                      <button
+                        onClick={() => handleViewDesign(design.id)}
+                        disabled={isAct}
+                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-900 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors cursor-pointer border-none disabled:opacity-50"
+                      >
+                        <Eye size={14} /> Review in 3D Studio
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => updateDesignStatus(design.id, 'approved')}
+                          disabled={isAct}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <CheckCircle size={13} /> Approve
+                        </button>
+                        <button
+                          onClick={() => updateDesignStatus(design.id, 'rejected')}
+                          disabled={isAct}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <XCircle size={13} /> Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Bookings Tab ── */}
+        {!loading && activeTab === 'bookings' && (() => {
+          const active = bookings.filter(b => b.status === 'Confirmed' || b.status === 'In Progress');
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {active.length === 0 ? (
+                <EmptyState icon={Calendar} title="No active consultations" sub="All bookings are either completed or pending confirmation." />
+              ) : active.map(booking => {
+                const isAct = actionLoading === booking.id;
+                const thumb = getThumbnail(booking);
+                return (
+                  <div key={booking.id} className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                    <div className="relative w-full h-40 bg-slate-50">
+                      {thumb
+                        ? <img src={thumb} alt={booking.service_type} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-300">
+                            <Calendar size={36} strokeWidth={1} /><span className="text-xs">No reference image</span>
+                          </div>
+                      }
+                      <div className="absolute top-2 right-2"><Badge label={booking.status} /></div>
+                    </div>
+
+                    <div className="p-5 flex flex-col flex-1">
+                      <h3 className="font-bold text-slate-800 capitalize mb-0.5">{booking.service_type} Consultation</h3>
+                      <p className="text-xs text-slate-400 mb-4">Ref #{booking.id} · {booking.scheduled_date}</p>
+
+                      <div className="space-y-2 text-sm mb-5">
+                        <Row label="Customer"  value={booking.customer_name} />
+                        <Row label="Lot"       value={getLotProfile(booking)} />
+                        <Row label="Time"      value={booking.preferred_time || 'Morning'} />
+                        <Row label="Contact"   value={booking.contact_number || '—'} />
+                      </div>
+
+                      {booking.service_address && (
+                        <div className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 mb-5 leading-relaxed border border-slate-100">
+                          <span className="font-bold text-slate-600 uppercase tracking-wide text-[10px] block mb-0.5">Address</span>
+                          {booking.service_address}
+                        </div>
+                      )}
+
+                      <div className="flex flex-col gap-2 mt-auto">
+                        <button
+                          onClick={() => updateBookingStatus(booking.id, booking.status === 'Confirmed' ? 'In Progress' : 'Completed')}
+                          disabled={isAct}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-colors cursor-pointer border-none disabled:opacity-50"
+                        >
+                          {isAct ? 'Updating…' : booking.status === 'Confirmed' ? '▶ Start Consultation' : '✓ Complete Consultation'}
+                        </button>
+                        <button
+                          onClick={() => updateBookingStatus(booking.id, 'Cancelled')}
+                          disabled={isAct}
+                          className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-xl border border-red-200 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          Cancel Booking
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        {/* ── Orders Tab ── */}
+        {!loading && activeTab === 'orders' && (() => {
+          const active = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled');
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {active.length === 0 ? (
+                <EmptyState icon={Package} title="No active orders" sub="All orders have been delivered or cancelled." />
+              ) : active.map(order => {
+                const isAct = actionLoading === order.id;
+                const linked = getLinkedDesign(order.customer_name);
+                const thumb = linked?.original_image_url || null;
+                const itemSummary = order.items?.map(i => `${i.quantity}× ${i.item_name}`).join(', ') || 'Custom Plant Assets';
+                const isExpanded = expandedOrder === order.id;
+                return (
+                  <div key={order.id} className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                    <div className="relative w-full h-40 bg-slate-50">
+                      {thumb
+                        ? <img src={thumb} alt="Order ref" className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-300">
+                            <ShoppingBag size={36} strokeWidth={1} /><span className="text-xs">No reference photo</span>
+                          </div>
+                      }
+                      <div className="absolute top-2 right-2"><Badge label={order.status} /></div>
+                    </div>
+
+                    <div className="p-5 flex flex-col flex-1">
+                      <h3 className="font-bold text-slate-800 mb-0.5">Order #{order.id}</h3>
+                      <p className="text-xs text-slate-400 mb-4">
+                        {new Date(order.created_at).toLocaleDateString()} · {order.payment_method === 'cod' ? 'Cash on Delivery' : 'Paid Online'}
+                      </p>
+
+                      <div className="space-y-2 text-sm mb-3">
+                        <Row label="Customer" value={order.customer_name} />
+                        <Row label="Email"    value={order.customer_email} />
+                        <Row label="Total"    value={`₱${Number(order.total_price).toLocaleString()}`} valueClass="font-bold text-emerald-600" />
+                      </div>
+
+                      <div className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 mb-5 leading-relaxed border border-slate-100 line-clamp-2">
+                        <span className="font-bold text-slate-600 uppercase tracking-wide text-[10px] block mb-0.5">Items</span>
+                        {itemSummary}
+                      </div>
+
+                      <div className="flex flex-col gap-2 mt-auto">
+                        <button
+                          onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-900 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors cursor-pointer border-none"
+                        >
+                          <Truck size={14} /> Update Fulfillment
+                          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+
+                        {isExpanded && (
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-1">
+                            <p className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">Order Items</p>
+                            <ul className="space-y-1 mb-3">
+                              {order.items?.map(item => (
+                                <li key={item.id} className="text-xs text-slate-600">
+                                  <span className="font-bold">{item.quantity}×</span> {item.item_name}
+                                  <span className="text-slate-400"> · ₱{Number(item.price_at_booking).toLocaleString()}</span>
+                                </li>
+                              ))}
+                            </ul>
+                            <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200">
+                              {(order.status === 'Pending' || order.status === 'Paid') && (
+                                <button
+                                  onClick={() => updateOrderStatus(order.id, 'Shipped')}
+                                  disabled={isAct}
+                                  className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg border-none cursor-pointer disabled:opacity-50"
+                                >
+                                  Ship Order
+                                </button>
+                              )}
+                              {(order.status !== 'Delivered') && (
+                                <button
+                                  onClick={() => updateOrderStatus(order.id, 'Delivered')}
+                                  disabled={isAct}
+                                  className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg border-none cursor-pointer disabled:opacity-50"
+                                >
+                                  Mark Delivered
+                                </button>
+                              )}
+                              <button
+                                onClick={() => updateOrderStatus(order.id, 'Cancelled')}
+                                disabled={isAct}
+                                className="flex-1 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-[11px] font-bold rounded-lg border border-red-200 cursor-pointer disabled:opacity-50"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+
+      </div>
+
+      {/* ── Toast stack ── */}
+      <ToastStack toasts={toasts} dismiss={dismiss} />
+    </div>
+  );
+};
+
+/* ─── Inline key-value row helper ──────────────────────────────────────── */
+function Row({ label, value, valueClass = 'font-semibold text-slate-700' }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="text-slate-400 shrink-0">{label}</span>
+      <span className={`truncate max-w-[160px] text-right ${valueClass}`}>{value}</span>
+    </div>
+  );
+}
 
 export default StaffDashboard;

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { AuthProvider } from "./context/AuthContext";
 import { DesignProvider } from "./context/DesignContext";
 import GardenDesigner from "./components/GardenDesigner";
+import AIGardenDesigner from "./components/AIGardenDesigner";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
@@ -22,6 +23,7 @@ import ForgotPassword from "./components/ForgotPassword";
 import StaffAttendance from "./components/StaffAttendance";
 import AdminAttendance from "./components/AdminAttendance";
 import UserDashboard from "./components/UserDashboard";
+import AdminSettings from "./components/AdminSettings";
 import "./App.css";
 
 function App() {
@@ -64,6 +66,18 @@ function App() {
                   <RoleProtectedRoute allowedRoles={['user', 'admin', 'staff']}>
                     <DashboardLayout>
                       <GardenDesigner />
+                    </DashboardLayout>
+                  </RoleProtectedRoute>
+                }
+              />
+
+              {/* AI Designer */}
+              <Route
+                path="/ai-designer"
+                element={
+                  <RoleProtectedRoute allowedRoles={['user', 'admin', 'staff']}>
+                    <DashboardLayout>
+                      <AIGardenDesigner />
                     </DashboardLayout>
                   </RoleProtectedRoute>
                 }
@@ -160,6 +174,18 @@ function App() {
                   <RoleProtectedRoute allowedRoles={['admin']}>
                     <DashboardLayout>
                       <AdminDashboard />
+                    </DashboardLayout>
+                  </RoleProtectedRoute>
+                }
+              />
+
+              {/* Admin Settings */}
+              <Route
+                path="/admin-settings"
+                element={
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout>
+                      <AdminSettings />
                     </DashboardLayout>
                   </RoleProtectedRoute>
                 }

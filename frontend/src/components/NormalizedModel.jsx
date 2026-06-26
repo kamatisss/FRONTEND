@@ -30,7 +30,7 @@ const DEFAULT_CATEGORY_SCALE = 1.5; // fallback for unknown categories
  *   scale     {number}  — User's UI scale multiplier (e.g. 0.8 – 2.0)
  *   category  {string}  — 'plant' | 'hardscape' | 'furniture'
  */
-export default function NormalizedModel({ url, scale = 1, category = 'plant' }) {
+export default function NormalizedModel({ url, scale = 1, category = 'plant', realWorldSize }) {
   const { scene } = useGLTF(url);
 
   const normalizedScene = useMemo(() => {
@@ -58,12 +58,13 @@ export default function NormalizedModel({ url, scale = 1, category = 'plant' }) 
     // Guard: if the model has no geometry (empty GLTF) skip transforms
     if (size.x === 0 && size.y === 0 && size.z === 0) return clone;
 
-    // ── 4. Base normalization scale: largest axis → 1 unit ────────────────────
+    // ── 4. Base normalization scale: largest axis → target scale unit ──────────
     const maxDim   = Math.max(size.x, size.y, size.z);
-    const normScale = 1 / maxDim;
+    const targetScale = realWorldSize || 1.0;
+    const normScale = targetScale / maxDim;
 
     // ── 5. Category multiplier ────────────────────────────────────────────────
-    const catMult = CATEGORY_SCALE[category] ?? DEFAULT_CATEGORY_SCALE;
+    const catMult = realWorldSize ? 1.0 : (CATEGORY_SCALE[category] ?? DEFAULT_CATEGORY_SCALE);
 
     // ── 6. Combined final scale (normalization × category × user slider) ──────
     const finalScale = normScale * catMult * scale;
@@ -80,7 +81,7 @@ export default function NormalizedModel({ url, scale = 1, category = 'plant' }) 
     );
 
     return clone;
-  }, [scene, scale, category]);
+  }, [scene, scale, category, realWorldSize]);
   // Re-run whenever the loaded scene, the user's scale, or the category changes.
 
   return <primitive object={normalizedScene} />;

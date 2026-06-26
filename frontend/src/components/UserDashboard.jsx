@@ -294,8 +294,7 @@ const UserDashboard = () => {
     }
 
     return (
-        <div style={{ backgroundColor: '#f8fafc', minHeight: '100%', padding: '32px', fontFamily: "'Inter', sans-serif" }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8" style={{ fontFamily: "'Inter', sans-serif" }}>
                 
                 {/* Header Welcome and Quick Actions */}
                 <div style={{ 
@@ -727,7 +726,6 @@ const UserDashboard = () => {
                     </div>
                 </div>
 
-            </div>
         </div>
     );
 };
