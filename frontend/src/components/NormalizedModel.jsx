@@ -42,6 +42,20 @@ export default function NormalizedModel({ url, scale = 1, category = 'plant', re
       if (child.isMesh) {
         child.castShadow    = true;
         child.receiveShadow = true;
+        child.frustumCulled = false;
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => {
+              mat.side = THREE.DoubleSide;
+            });
+          } else {
+            child.material.side = THREE.DoubleSide;
+          }
+        }
+        if (child.geometry) {
+          child.geometry.computeBoundingBox();
+          child.geometry.computeBoundingSphere();
+        }
       }
     });
 

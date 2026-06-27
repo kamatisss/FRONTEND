@@ -47,9 +47,9 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
     const camDist   = Math.max(gw, gl) * 1.1 + 6;
     const camHeight = Math.max(gw, gl) * 0.6 + 4;
 
-    // 1. Scene — dark slate background matching the reference design
+    // 1. Scene — soft off-white background for UI/UX harmony
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1e293b);
+    scene.background = new THREE.Color('#f8fafc');
 
     // 2. Camera centred over the lot
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
@@ -78,25 +78,31 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
     dirLight.shadow.camera.right  =  shadowBound;
     dirLight.shadow.camera.top    =  shadowBound;
     dirLight.shadow.camera.bottom = -shadowBound;
+    
+    // Position the light target at the lot center to align shadow frustum
+    dirLight.target.position.set(cx, 0, cz);
+    scene.add(dirLight.target);
     scene.add(dirLight);
 
     // 5. Ground plane sized to lot + padding
     const groundGeo = new THREE.PlaneGeometry(gw, gl);
     groundGeo.rotateX(-Math.PI / 2);
     const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x4caf50,
-      roughness: 0.8,
-      metalness: 0.1,
+      color: new THREE.Color('#2d6a4f'), // vibrant landscape green
+      roughness: 0.75,
+      metalness: 0.0,
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.position.set(cx, -0.01, cz);
+    ground.position.set(cx, 0.0, cz);
     ground.receiveShadow = true;
     scene.add(ground);
 
     // Grid matches the ground exactly — 1 division per metre for clean alignment
     const gridSpan = Math.max(gw, gl);
     const gridDivs = Math.round(gridSpan);
-    const gridHelper = new THREE.GridHelper(gridSpan, gridDivs, 0xa3e635, 0x84cc16);
+    const gridHelper = new THREE.GridHelper(gridSpan, gridDivs, 0xffffff, 0xffffff);
+    gridHelper.material.transparent = true;
+    gridHelper.material.opacity = 0.25;
     // Scale non-uniformly so cells stay 1 m × 1 m on rectangular lots
     gridHelper.scale.set(gw / gridSpan, 1, gl / gridSpan);
     gridHelper.position.set(cx, 0.001, cz);
@@ -198,6 +204,7 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
 
         const obstacleMesh = new THREE.Mesh(geometry, material);
         obstacleMesh.position.set(plant.x, obstacleY, plant.z);
+        obstacleMesh.visible = false; // Hide layout boundaries and debug obstacle meshes to prevent invisible wall slicing issues
         aiGroup.add(obstacleMesh);
         return;
       }
@@ -290,6 +297,20 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
               if (child.isMesh) {
                 child.castShadow = true;
                 child.receiveShadow = true;
+                child.frustumCulled = false;
+                if (child.material) {
+                  if (Array.isArray(child.material)) {
+                    child.material.forEach((mat) => {
+                      mat.side = THREE.DoubleSide;
+                    });
+                  } else {
+                    child.material.side = THREE.DoubleSide;
+                  }
+                }
+                if (child.geometry) {
+                  child.geometry.computeBoundingBox();
+                  child.geometry.computeBoundingSphere();
+                }
               }
             });
 

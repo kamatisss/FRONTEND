@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Sparkles, ArrowLeft, Check, Compass, ShieldAlert, Upload, X } from 'lucide-react';
 import ThreeGardenCanvas from './ThreeGardenCanvas';
+import { useDesign } from '../context/DesignContext';
 
 const AVAILABLE_PLANTS = [
   { id: 'tree_oak', name: 'Oak Tree', price: 1200, emoji: '🌳', type: 'Tree' },
@@ -54,7 +56,15 @@ const BotanicalSVG = () => (
 );
 
 export default function AIGardenDesigner() {
+  const navigate = useNavigate();
+  const { dispatch } = useDesign();
+
   const [budget, setBudget] = useState(5000);
+
+  const handleDesignManually = () => {
+    dispatch({ type: 'RESET' });
+    navigate('/studio');
+  };
   const [lotWidth, setLotWidth] = useState(10.0);
   const [lotLength, setLotLength] = useState(10.0);
   const [preferredPlants, setPreferredPlants] = useState([]);
@@ -318,6 +328,24 @@ export default function AIGardenDesigner() {
       marginTop: '1.75rem',
       letterSpacing: '0.01em',
     },
+    secondaryBtn: {
+      width: '100%',
+      padding: '15px 24px',
+      background: 'transparent',
+      color: '#2D4A2D',
+      fontWeight: 700,
+      fontSize: '0.95rem',
+      border: '2px solid #2D4A2D',
+      borderRadius: '14px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '10px',
+      transition: 'all 0.2s',
+      marginTop: '1rem',
+      letterSpacing: '0.01em',
+    },
     errorBox: {
       background: '#FEF2F2',
       border: '1.5px solid #FECACA',
@@ -523,6 +551,7 @@ export default function AIGardenDesigner() {
         .plant-card:hover { transform: translateY(-1px); }
         .layout-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(26,46,26,0.14) !important; }
         .submit-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(45,74,45,0.35) !important; }
+        .secondary-btn:hover { background: #EAF0E4 !important; }
         .back-btn:hover { background: #EAF0E4 !important; color: #2D4A2D !important; }
         .select-btn:hover { opacity: 0.88; }
         .fade-in { animation: fadeUp 0.4s ease both; }
@@ -670,6 +699,15 @@ export default function AIGardenDesigner() {
                 <button type="submit" className="submit-btn" style={styles.submitBtn}>
                   <Sparkles size={16} />
                   Generate AI Garden Designs
+                </button>
+
+                <button 
+                  type="button" 
+                  className="secondary-btn" 
+                  style={styles.secondaryBtn} 
+                  onClick={handleDesignManually}
+                >
+                  Design Manually from Scratch
                 </button>
               </form>
             )}
