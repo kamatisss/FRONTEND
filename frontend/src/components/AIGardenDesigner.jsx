@@ -74,6 +74,7 @@ export default function AIGardenDesigner() {
   const [error, setError] = useState('');
   const [generatedLayouts, setGeneratedLayouts] = useState([]);
   const [activeLayout, setActiveLayout] = useState(null);
+  const [activeView, setActiveView] = useState('3d');
 
   const handleTogglePlant = (id) => {
     setPreferredPlants(prev =>
@@ -779,23 +780,87 @@ export default function AIGardenDesigner() {
                   ))}
                 </div>
 
-                {/* 3D Preview */}
+                {/* 3D / AR Preview */}
                 {activeLayout && (
                   <div style={styles.previewPanel} className="fade-in">
                     <div style={styles.previewHeader}>
-                      <div>
-                        <h3 style={styles.previewTitle}>{activeLayout.design_name}</h3>
-                        <p style={styles.previewSub}>Left click + drag to rotate · Scroll to zoom · Right drag to pan</p>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                          <h3 style={{ ...styles.previewTitle, margin: 0 }}>{activeLayout.design_name}</h3>
+                          {/* View Segment Controller */}
+                          <div style={{
+                            display: 'inline-flex',
+                            background: '#EDE8DF',
+                            borderRadius: '10px',
+                            padding: '3px',
+                            gap: '2px',
+                          }}>
+                            {[
+                              { key: '3d', label: 'Interactive 3D Canvas' },
+                              { key: 'ar', label: 'Photo Overlay Preview' },
+                            ].map(tab => (
+                              <button
+                                key={tab.key}
+                                type="button"
+                                onClick={() => setActiveView(tab.key)}
+                                style={{
+                                  padding: '5px 13px',
+                                  borderRadius: '7px',
+                                  border: activeView === tab.key
+                                    ? '1.5px solid #4A7A3A'
+                                    : '1.5px solid transparent',
+                                  cursor: 'pointer',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  transition: 'all 0.2s',
+                                  background: activeView === tab.key ? '#2D4A2D' : 'transparent',
+                                  color: activeView === tab.key ? '#F7F3EC' : '#9A9080',
+                                  letterSpacing: '0.01em',
+                                  lineHeight: 1.2,
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {tab.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <p style={styles.previewSub}>
+                          {activeView === 'ar'
+                            ? 'Camera locked to photo perspective · Scroll to zoom'
+                            : 'Left click + drag to rotate · Scroll to zoom · Right drag to pan'}
+                        </p>
                       </div>
                       <div style={styles.previewCostBadge}>₱{activeLayout.total_cost.toLocaleString()}</div>
                     </div>
-                    <div style={{ borderRadius: '12px', overflow: 'hidden' }}>
+
+                    <div style={{ borderRadius: '12px', overflow: 'hidden', position: 'relative', height: '450px' }}>
                       <ThreeGardenCanvas
                         plants={activeLayout.plants}
                         lotWidth={Number(lotWidth)}
                         lotLength={Number(lotLength)}
                         backgroundImageUrl={imagePreview}
+                        arMode={activeView === 'ar'}
                       />
+                      {activeView === 'ar' && !imagePreview && (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '16px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: 'rgba(45,74,45,0.85)',
+                          color: '#F7F3EC',
+                          padding: '8px 20px',
+                          borderRadius: '100px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          backdropFilter: 'blur(8px)',
+                          whiteSpace: 'nowrap',
+                          pointerEvents: 'none',
+                        }}>
+                          Upload a garden photo above to enable the overlay effect
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getInventoryItems } from '../services/api';
 
-export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgroundImageUrl }) {
+export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgroundImageUrl, arMode = false }) {
   const canvasRef = useRef(null);
   const aiPlantsGroupRef = useRef(null);
   const [inventory, setInventory] = useState([]);
@@ -30,30 +30,37 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
     const width = parent.clientWidth || 800;
     const height = 450;
 
-    // Resolve lot dimensions with safe numeric fallbacks
     const pad = 6;
     const currentWidth  = Math.max(Number(lotWidth)  || 10, 1);
     const currentLength = Math.max(Number(lotLength) || 10, 1);
-
-    // Padded sizes — ground and grid match the lot with a 3 m border on each side
     const gw = currentWidth  + pad;
     const gl = currentLength + pad;
-
-    // Lot centre — camera and orbit target both anchor here
     const cx = currentWidth  / 2;
     const cz = currentLength / 2;
-
-    // Camera distance scales with lot so the whole area is always in frame
     const camDist   = Math.max(gw, gl) * 1.1 + 6;
     const camHeight = Math.max(gw, gl) * 0.6 + 4;
 
-    // 1. Scene — soft off-white background for UI/UX harmony
+    // 1. Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#f8fafc');
+    if (arMode && backgroundImageUrl) {
+      const textureLoader = new THREE.TextureLoader();
+      const bgTexture = textureLoader.load(backgroundImageUrl);
+      scene.background = bgTexture;
+    } else if (arMode) {
+      // No photo uploaded — pleasant sky gradient fallback
+      scene.background = new THREE.Color('#c8e8f4');
+    } else {
+      scene.background = new THREE.Color('#f8fafc');
+    }
 
-    // 2. Camera centred over the lot
+    // 2. Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(cx, camHeight, cz + camDist);
+    if (arMode) {
+      // Low-angle perspective that approximates an outdoor photo horizon
+      camera.position.set(cx, camHeight * 0.42, cz + camDist * 0.88);
+    } else {
+      camera.position.set(cx, camHeight, cz + camDist);
+    }
 
     // 3. Renderer
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -63,7 +70,7 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // 4. Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    const ambientLight = new THREE.AmbientLight(0xffffff, arMode ? 0.9 : 0.7);
     scene.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -78,46 +85,60 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
     dirLight.shadow.camera.right  =  shadowBound;
     dirLight.shadow.camera.top    =  shadowBound;
     dirLight.shadow.camera.bottom = -shadowBound;
-    
-    // Position the light target at the lot center to align shadow frustum
     dirLight.target.position.set(cx, 0, cz);
     scene.add(dirLight.target);
     scene.add(dirLight);
 
-    // 5. Ground plane sized to lot + padding
+    // 5. Ground plane
     const groundGeo = new THREE.PlaneGeometry(gw, gl);
     groundGeo.rotateX(-Math.PI / 2);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#2d6a4f'), // vibrant landscape green
-      roughness: 0.75,
-      metalness: 0.0,
-    });
+    let groundMat;
+    if (arMode) {
+      // Shadow-only ground: transparent plane that only shows plant shadows over the photo
+      groundMat = new THREE.ShadowMaterial({ opacity: 0.28, transparent: true });
+    } else {
+      groundMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color('#2d6a4f'),
+        roughness: 0.75,
+        metalness: 0.0,
+      });
+    }
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.position.set(cx, 0.0, cz);
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Grid matches the ground exactly — 1 division per metre for clean alignment
-    const gridSpan = Math.max(gw, gl);
-    const gridDivs = Math.round(gridSpan);
-    const gridHelper = new THREE.GridHelper(gridSpan, gridDivs, 0xffffff, 0xffffff);
-    gridHelper.material.transparent = true;
-    gridHelper.material.opacity = 0.25;
-    // Scale non-uniformly so cells stay 1 m × 1 m on rectangular lots
-    gridHelper.scale.set(gw / gridSpan, 1, gl / gridSpan);
-    gridHelper.position.set(cx, 0.001, cz);
-    scene.add(gridHelper);
+    // Grid — only in 3D mode
+    let gridHelper = null;
+    if (!arMode) {
+      const gridSpan = Math.max(gw, gl);
+      const gridDivs = Math.round(gridSpan);
+      gridHelper = new THREE.GridHelper(gridSpan, gridDivs, 0xffffff, 0xffffff);
+      gridHelper.material.transparent = true;
+      gridHelper.material.opacity = 0.25;
+      gridHelper.scale.set(gw / gridSpan, 1, gl / gridSpan);
+      gridHelper.position.set(cx, 0.001, cz);
+      scene.add(gridHelper);
+    }
 
     // 6. Empty group for AI plants
     const aiGroup = new THREE.Group();
     scene.add(aiGroup);
     aiPlantsGroupRef.current = aiGroup;
 
-    // 7. Orbit Controls — target the lot centre
+    // 7. Orbit Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.target.set(cx, 0, cz);
+    if (arMode) {
+      // Lock orbit to simulate a fixed photo horizon line
+      controls.minPolarAngle = Math.PI / 4;
+      controls.maxPolarAngle = Math.PI / 2.2;
+      controls.minAzimuthAngle = -Math.PI / 5;
+      controls.maxAzimuthAngle = Math.PI / 5;
+      controls.enablePan = false;
+    }
     controls.update();
 
     // 8. Animation Loop
@@ -129,7 +150,6 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
     };
     animate();
 
-    // Resize Handler
     const handleResize = () => {
       if (!canvas.parentElement) return;
       const w = parent.clientWidth;
@@ -146,9 +166,9 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
       renderer.dispose();
       ground.geometry.dispose();
       groundMat.dispose();
-      gridHelper.dispose();
+      if (gridHelper) gridHelper.dispose();
     };
-  }, [lotWidth, lotLength]);
+  }, [lotWidth, lotLength, arMode, backgroundImageUrl]);
 
   // Effect 2: Place, position, rotate, and dispose AI plants when props change
   useEffect(() => {
@@ -351,8 +371,8 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
   return (
     <canvas
       ref={canvasRef}
-      className="w-full bg-slate-100 block focus:outline-none"
-      style={{ minHeight: '450px' }}
+      className="w-full block focus:outline-none"
+      style={{ height: '450px', display: 'block' }}
     />
   );
 }
