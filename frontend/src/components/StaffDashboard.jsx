@@ -7,8 +7,9 @@ import {
   LayoutDashboard, Shield, Eye, CheckCircle2,
   ShoppingBag, Calendar, FileText, AlertTriangle, Truck,
   X, Package, Star, ArrowRight, Clock, ChevronDown, ChevronUp,
-  CheckCircle, XCircle,
+  CheckCircle, XCircle, Layers,
 } from 'lucide-react';
+import ThreeGardenCanvas from './ThreeGardenCanvas';
 
 /* ─── Toast notification system ─────────────────────────────────────────── */
 function useToast() {
@@ -129,6 +130,8 @@ const StaffDashboard = () => {
   const [activeTab,      setActiveTab]      = useState('overview');
   const [expandedOrder,  setExpandedOrder]  = useState(null);
   const [actionLoading,  setActionLoading]  = useState(null);
+  const [designModal,    setDesignModal]    = useState(null);
+  const [modalArMode,    setModalArMode]    = useState(false);
 
   const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -139,6 +142,9 @@ const StaffDashboard = () => {
       setActiveTab(tab);
     }
   }, [location.search]);
+
+  /* Reset AR mode whenever a new design is opened in the modal */
+  useEffect(() => { setModalArMode(false); }, [designModal]);
 
   const headers = { Authorization: `Bearer ${authTokens?.access}` };
 
@@ -282,6 +288,22 @@ const StaffDashboard = () => {
     const d = allDesigns.find(x => x.id === booking.design);
     return d?.original_image_url || booking.design_details?.image_url || null;
   };
+
+  /* ── Transform placed_items → ThreeGardenCanvas plant format ── */
+  const toCanvasPlants = (placedItems = []) =>
+    placedItems.map(item => {
+      // AI designer flat format: { plant_id, x, z, rotation }
+      if (item.plant_id !== undefined) {
+        return { plant_id: item.plant_id, x: item.x ?? 0, z: item.z ?? 0, rotation: item.rotation ?? 0 };
+      }
+      // Studio format: { productId/modelType, position: {x,z}, rotation: {y} }
+      return {
+        plant_id: item.modelType || item.model_type || String(item.productId || ''),
+        x: item.position?.x ?? 0,
+        z: item.position?.z ?? 0,
+        rotation: item.rotation?.y ?? 0,
+      };
+    });
 
   /* ── Greeting ── */
   const hour = new Date().getHours();
@@ -491,12 +513,28 @@ const StaffDashboard = () => {
                 return (
                   <div key={booking.id} className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                     <div className="relative w-full h-40 bg-slate-50">
-                      {thumb
-                        ? <img src={thumb} alt={booking.service_type} className="w-full h-full object-cover" />
-                        : <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-300">
-                            <Calendar size={36} strokeWidth={1} /><span className="text-xs">No reference image</span>
+                      {thumb ? (
+                        <img src={thumb} alt={booking.service_type} className="w-full h-full object-cover" />
+                      ) : booking.design_details ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                          <div className="p-3 bg-emerald-50 rounded-xl">
+                            <Layers size={26} className="text-emerald-400" strokeWidth={1.5} />
                           </div>
-                      }
+                          <span className="text-xs text-slate-500 font-semibold max-w-[140px] truncate text-center">
+                            {booking.design_details.name}
+                          </span>
+                          <button
+                            onClick={() => setDesignModal(booking.design_details)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg border-none cursor-pointer transition-colors"
+                          >
+                            <Eye size={12} /> View AI Design
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-300">
+                          <Calendar size={36} strokeWidth={1} /><span className="text-xs">No reference image</span>
+                        </div>
+                      )}
                       <div className="absolute top-2 right-2"><Badge label={booking.status} /></div>
                     </div>
 
@@ -519,6 +557,14 @@ const StaffDashboard = () => {
                       )}
 
                       <div className="flex flex-col gap-2 mt-auto">
+                        {booking.design_details && (
+                          <button
+                            onClick={() => setDesignModal(booking.design_details)}
+                            className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-colors cursor-pointer border-none"
+                          >
+                            <Layers size={14} /> View Attached 3D Design
+                          </button>
+                        )}
                         <button
                           onClick={() => updateBookingStatus(booking.id, booking.status === 'Confirmed' ? 'In Progress' : 'Completed')}
                           disabled={isAct}
@@ -646,6 +692,79 @@ const StaffDashboard = () => {
 
       {/* ── Toast stack ── */}
       <ToastStack toasts={toasts} dismiss={dismiss} />
+
+      {/* ── Design View Modal ── */}
+      {designModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setDesignModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl overflow-hidden w-full shadow-2xl"
+            style={{ maxWidth: '860px' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <p className="font-extrabold text-slate-900 text-base leading-none mb-0.5">
+                  {designModal.name}
+                </p>
+                <p className="text-slate-400 text-xs">
+                  {modalArMode ? 'AR Photo Overlay · Read-only Preview' : '3D Garden Layout · Read-only Preview'}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {(designModal.reference_image_url || designModal.image_url) && (
+                  <div style={{ display: 'inline-flex', background: '#F1F5F9', borderRadius: '8px', padding: '3px', gap: '2px' }}>
+                    {[{ key: false, label: '3D View' }, { key: true, label: 'AR Overlay' }].map(({ key, label }) => (
+                      <button
+                        key={String(key)}
+                        type="button"
+                        onClick={() => setModalArMode(key)}
+                        style={{
+                          padding: '4px 12px',
+                          borderRadius: '6px',
+                          border: modalArMode === key ? '1.5px solid #4A7A3A' : '1.5px solid transparent',
+                          cursor: 'pointer',
+                          fontSize: '0.71rem',
+                          fontWeight: 700,
+                          background: modalArMode === key ? '#2D4A2D' : 'transparent',
+                          color: modalArMode === key ? '#F7F3EC' : '#64748B',
+                          transition: 'all 0.18s',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setDesignModal(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer bg-transparent border-none"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            {/* Canvas */}
+            <div style={{ height: '450px' }}>
+              <ThreeGardenCanvas
+                plants={toCanvasPlants(designModal.placed_items)}
+                lotWidth={designModal.dimensions?.width || 10}
+                lotLength={designModal.dimensions?.length || 15}
+                backgroundImageUrl={designModal.reference_image_url || designModal.image_url || null}
+                arMode={modalArMode}
+                arGrid={modalArMode}
+                horizonY={designModal.dimensions?.horizonY ?? 0.5}
+                readOnly={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

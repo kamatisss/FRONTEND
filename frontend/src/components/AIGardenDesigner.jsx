@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Sparkles, ArrowLeft, Check, Compass, ShieldAlert, Upload, X } from 'lucide-react';
+import { Sparkles, ArrowLeft, Check, Compass, ShieldAlert, Upload, X, CalendarPlus } from 'lucide-react';
 import ThreeGardenCanvas from './ThreeGardenCanvas';
 import { useDesign } from '../context/DesignContext';
+import { getInventoryItems } from '../services/api';
 
-const AVAILABLE_PLANTS = [
-  { id: 'tree_oak', name: 'Oak Tree', price: 1200, emoji: '🌳', type: 'Tree' },
-  { id: 'flower_rose', name: 'Rose', price: 150, emoji: '🌹', type: 'Flower' },
-  { id: 'shrub_fern', name: 'Fern', price: 250, emoji: '🌿', type: 'Shrub' },
-  { id: 'tree_palm', name: 'Palm Tree', price: 800, emoji: '🌴', type: 'Tree' },
-  { id: 'flower_lavender', name: 'Lavender', price: 180, emoji: '💜', type: 'Flower' },
-  { id: 'shrub_boxwood', name: 'Boxwood', price: 300, emoji: '🫧', type: 'Shrub' },
-  { id: 'plant_bamboo', name: 'Bamboo', price: 450, emoji: '🎋', type: 'Plant' },
-  { id: 'plant_banana', name: 'Banana Plant', price: 350, emoji: '🍌', type: 'Plant' },
-];
+const getPlantEmoji = (name = '') => {
+  const n = name.toLowerCase();
+  if (n.includes('palm')) return '🌴';
+  if (n.includes('pine') || n.includes('fir') || n.includes('spruce')) return '🌲';
+  if (n.includes('oak') || n.includes('maple') || n.includes('tree')) return '🌳';
+  if (n.includes('rose')) return '🌹';
+  if (n.includes('lavender') || n.includes('violet')) return '💜';
+  if (n.includes('sunflower')) return '🌻';
+  if (n.includes('flower') || n.includes('bloom') || n.includes('blossom')) return '🌸';
+  if (n.includes('banana') || n.includes('tropical')) return '🍌';
+  if (n.includes('bamboo')) return '🎋';
+  if (n.includes('cactus') || n.includes('succulent')) return '🌵';
+  if (n.includes('fern') || n.includes('grass')) return '🌿';
+  if (n.includes('shrub') || n.includes('boxwood') || n.includes('hedge')) return '🫧';
+  return '🪴';
+};
 
 const BotanicalSVG = () => (
   <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.12 }}>
@@ -60,6 +67,17 @@ export default function AIGardenDesigner() {
   const { dispatch } = useDesign();
 
   const [budget, setBudget] = useState(5000);
+  const [inventory, setInventory] = useState([]);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    getInventoryItems('plant')
+      .then(data => { if (alive) setInventory(data); })
+      .catch(() => {})
+      .finally(() => { if (alive) setInventoryLoading(false); });
+    return () => { alive = false; };
+  }, []);
 
   const handleDesignManually = () => {
     dispatch({ type: 'RESET' });
@@ -75,6 +93,10 @@ export default function AIGardenDesigner() {
   const [generatedLayouts, setGeneratedLayouts] = useState([]);
   const [activeLayout, setActiveLayout] = useState(null);
   const [activeView, setActiveView] = useState('3d');
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [horizonY, setHorizonY] = useState(0.5);
+  const [calibrationMode, setCalibrationMode] = useState(false);
+  const [photoTone, setPhotoTone] = useState(null);
 
   const handleTogglePlant = (id) => {
     setPreferredPlants(prev =>
@@ -117,8 +139,18 @@ export default function AIGardenDesigner() {
     if (selectedImage) formData.append('image', selectedImage);
     try {
       const response = await axios.post(`${API_BASE_URL}/generate-layouts/`, formData, { headers });
-      if (response.data?.designs) setGeneratedLayouts(response.data.designs);
-      else throw new Error("Invalid response format");
+      if (response.data?.designs) {
+        const inventoryIds = new Set(inventory.map(item => String(item.id)));
+        const validated = response.data.designs.map(design => ({
+          ...design,
+          plants: (design.plants || []).filter(p =>
+            p.is_existing || inventoryIds.has(String(p.plant_id))
+          ),
+        }));
+        setGeneratedLayouts(validated);
+      } else {
+        throw new Error("Invalid response format");
+      }
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.detail || err.message || 'An unexpected error occurred.');
     } finally {
@@ -128,6 +160,82 @@ export default function AIGardenDesigner() {
 
   const handleSelectLayout = (layout) => setActiveLayout(layout);
   const handleReset = () => { setGeneratedLayouts([]); setError(''); setActiveLayout(null); };
+
+  // Analyse the uploaded photo's average colour to warm/cool the 3D lighting
+  useEffect(() => {
+    if (!imagePreview) { setPhotoTone(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      const size = 48;
+      const cv = document.createElement('canvas');
+      cv.width = size; cv.height = size;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(img, 0, 0, size, size);
+      const d = ctx.getImageData(0, 0, size, size).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] > 128) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+      }
+      if (n > 0) setPhotoTone({ r: r / n / 255, g: g / n / 255, b: b / n / 255 });
+    };
+    img.src = imagePreview;
+  }, [imagePreview]);
+
+  // Exit calibration mode when switching away from AR view
+  useEffect(() => {
+    if (activeView !== 'ar') setCalibrationMode(false);
+  }, [activeView]);
+
+  // Move the horizon line to wherever the user clicked inside the canvas wrapper
+  const handleHorizonClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHorizonY(Math.max(0.08, Math.min(0.92, (e.clientY - rect.top) / rect.height)));
+  };
+
+  const handleBookDesign = async () => {
+    setBookingLoading(true);
+    const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const storedAuth = localStorage.getItem('authTokens');
+    const tokens = storedAuth ? JSON.parse(storedAuth) : null;
+    const authHeader = tokens?.access ? { Authorization: `Bearer ${tokens.access}` } : {};
+
+    let referenceImageUrl = '';
+    try {
+      if (selectedImage) {
+        const imgForm = new FormData();
+        imgForm.append('image', selectedImage);
+        const uploadRes = await axios.post(`${API_BASE_URL}/upload-design-image/`, imgForm, { headers: authHeader });
+        referenceImageUrl = uploadRes.data.url || '';
+      }
+      const designPayload = {
+        name: activeLayout.design_name,
+        placed_items: activeLayout.plants,
+        dimensions: { width: Number(lotWidth), length: Number(lotLength), horizonY },
+        total_cost: activeLayout.total_cost,
+        reference_image_url: referenceImageUrl,
+        status: 'draft',
+      };
+      const designRes = await axios.post(`${API_BASE_URL}/designs/`, designPayload, { headers: authHeader });
+      navigate('/book-service', {
+        state: {
+          designId: designRes.data.id,
+          designName: activeLayout.design_name,
+          totalCost: activeLayout.total_cost,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to save design:', err);
+      navigate('/book-service', {
+        state: {
+          designId: null,
+          designName: activeLayout.design_name,
+          totalCost: activeLayout.total_cost,
+        },
+      });
+    } finally {
+      setBookingLoading(false);
+    }
+  };
 
   const styles = {
     page: {
@@ -670,30 +778,41 @@ export default function AIGardenDesigner() {
                 {/* Plant Picker */}
                 <div>
                   <label style={styles.sectionLabel}>Preferred Plants <span style={{ color: '#B0A89A', fontWeight: 500, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
-                  <div style={styles.plantsGrid}>
-                    {AVAILABLE_PLANTS.map(plant => {
-                      const isSelected = preferredPlants.includes(plant.id);
-                      return (
-                        <button
-                          key={plant.id} type="button"
-                          onClick={() => handleTogglePlant(plant.id)}
-                          className="plant-card"
-                          style={styles.plantCard(isSelected)}
-                        >
-                          <span style={styles.plantEmoji}>{plant.emoji}</span>
-                          <span style={styles.plantInfo}>
-                            <span style={styles.plantName(isSelected)}>{plant.name}</span>
-                            <span style={styles.plantPrice(isSelected)}>₱{plant.price.toLocaleString()}</span>
-                          </span>
-                          {isSelected && (
-                            <span style={styles.plantCheck}>
-                              <Check size={10} color="#fff" />
+                  {inventoryLoading ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} style={{ height: '60px', borderRadius: '12px', background: '#F0EBE0', animation: 'pulse 1.4s ease-in-out infinite' }} />
+                      ))}
+                    </div>
+                  ) : inventory.length === 0 ? (
+                    <p style={{ fontSize: '0.8rem', color: '#9A9080', fontStyle: 'italic' }}>No plants found in inventory.</p>
+                  ) : (
+                    <div style={styles.plantsGrid}>
+                      {inventory.map(plant => {
+                        const isSelected = preferredPlants.includes(String(plant.id));
+                        const emoji = getPlantEmoji(plant.name);
+                        return (
+                          <button
+                            key={plant.id} type="button"
+                            onClick={() => handleTogglePlant(String(plant.id))}
+                            className="plant-card"
+                            style={styles.plantCard(isSelected)}
+                          >
+                            <span style={styles.plantEmoji}>{emoji}</span>
+                            <span style={styles.plantInfo}>
+                              <span style={styles.plantName(isSelected)}>{plant.name}</span>
+                              <span style={styles.plantPrice(isSelected)}>₱{Number(plant.unit_price).toLocaleString()}</span>
                             </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                            {isSelected && (
+                              <span style={styles.plantCheck}>
+                                <Check size={10} color="#fff" />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Submit */}
@@ -751,20 +870,25 @@ export default function AIGardenDesigner() {
                         <div style={styles.layoutCost}>₱{design.total_cost.toLocaleString()}</div>
                       </div>
                       <div style={styles.layoutBody}>
-                        <span style={styles.plantListLabel}>Flora Arrangement · {design.plants?.length || 0} plants</span>
+                        {(() => {
+                          const newPlants = design.plants?.filter(p => !p.is_existing) || [];
+                          return <span style={styles.plantListLabel}>Flora Arrangement · {newPlants.length} plants</span>;
+                        })()}
                         <div>
-                          {design.plants?.slice(0, 5).map((plant, pIdx) => {
-                            const detail = AVAILABLE_PLANTS.find(p => p.id === plant.plant_id);
+                          {design.plants?.filter(p => !p.is_existing).slice(0, 5).map((plant, pIdx) => {
+                            const detail = inventory.find(item => String(item.id) === String(plant.plant_id));
+                            const emoji = detail ? getPlantEmoji(detail.name) : '🪴';
+                            const displayName = detail ? detail.name : `Plant #${plant.plant_id}`;
                             return (
                               <div key={pIdx} style={styles.plantItem}>
-                                <span style={styles.plantItemName}>{detail ? `${detail.emoji} ${detail.name}` : plant.plant_id}</span>
-                                <span style={styles.plantItemCoord}>{plant.x.toFixed(1)}, {plant.z.toFixed(1)}</span>
+                                <span style={styles.plantItemName}>{emoji} {displayName}</span>
+                                <span style={styles.plantItemCoord}>{Number(plant.x).toFixed(1)}, {Number(plant.z).toFixed(1)}</span>
                               </div>
                             );
                           })}
-                          {design.plants?.length > 5 && (
+                          {(design.plants?.filter(p => !p.is_existing)?.length || 0) > 5 && (
                             <div style={{ textAlign: 'center', padding: '10px 0 2px', fontSize: '0.78rem', color: '#8A7E6E', fontWeight: 600 }}>
-                              + {design.plants.length - 5} more plants
+                              + {design.plants.filter(p => !p.is_existing).length - 5} more plants
                             </div>
                           )}
                         </div>
@@ -826,12 +950,36 @@ export default function AIGardenDesigner() {
                           </div>
                         </div>
                         <p style={styles.previewSub}>
-                          {activeView === 'ar'
-                            ? 'Camera locked to photo perspective · Scroll to zoom'
-                            : 'Left click + drag to rotate · Scroll to zoom · Right drag to pan'}
+                          {calibrationMode
+                            ? 'Click anywhere on the canvas to set the horizon line'
+                            : activeView === 'ar'
+                              ? 'Camera locked to photo perspective · Scroll to zoom'
+                              : 'Left click + drag to rotate · Scroll to zoom · Right drag to pan'}
                         </p>
                       </div>
-                      <div style={styles.previewCostBadge}>₱{activeLayout.total_cost.toLocaleString()}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {activeView === 'ar' && imagePreview && (
+                          <button
+                            type="button"
+                            onClick={() => setCalibrationMode(v => !v)}
+                            style={{
+                              padding: '7px 14px',
+                              background: calibrationMode ? 'rgba(251,191,36,0.15)' : 'transparent',
+                              border: `1.5px solid ${calibrationMode ? '#d97706' : '#D4CAB8'}`,
+                              color: calibrationMode ? '#b45309' : '#8A7E6E',
+                              fontWeight: 700,
+                              fontSize: '0.72rem',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              transition: 'all 0.18s',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {calibrationMode ? '✓ Done' : '⊕ Calibrate Horizon'}
+                          </button>
+                        )}
+                        <div style={styles.previewCostBadge}>₱{activeLayout.total_cost.toLocaleString()}</div>
+                      </div>
                     </div>
 
                     <div style={{ borderRadius: '12px', overflow: 'hidden', position: 'relative', height: '450px' }}>
@@ -841,7 +989,47 @@ export default function AIGardenDesigner() {
                         lotLength={Number(lotLength)}
                         backgroundImageUrl={imagePreview}
                         arMode={activeView === 'ar'}
+                        arGrid={activeView === 'ar'}
+                        horizonY={horizonY}
+                        photoTone={activeView === 'ar' ? photoTone : null}
                       />
+
+                      {/* Horizon calibration overlay */}
+                      {activeView === 'ar' && calibrationMode && (
+                        <div
+                          style={{ position: 'absolute', inset: 0, zIndex: 20, cursor: 'crosshair' }}
+                          onClick={handleHorizonClick}
+                        >
+                          {/* Instruction badge */}
+                          <div style={{
+                            position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)',
+                            background: 'rgba(0,0,0,0.72)', color: '#fff', padding: '6px 16px',
+                            borderRadius: '100px', fontSize: '0.71rem', fontWeight: 600,
+                            pointerEvents: 'none', whiteSpace: 'nowrap',
+                          }}>
+                            Click to align the horizon line with your photo
+                          </div>
+                          {/* Draggable horizon line */}
+                          <div style={{
+                            position: 'absolute', left: 0, right: 0,
+                            top: `${horizonY * 100}%`, transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                          }}>
+                            <div style={{ height: '2px', background: 'rgba(251,191,36,0.85)', position: 'relative' }}>
+                              <div style={{
+                                position: 'absolute', left: '50%', top: '-9px',
+                                transform: 'translateX(-50%)',
+                                background: 'rgba(251,191,36,0.95)', color: '#1a1a1a',
+                                fontSize: '0.58rem', fontWeight: 800, letterSpacing: '0.1em',
+                                padding: '2px 8px', borderRadius: '4px', whiteSpace: 'nowrap',
+                              }}>
+                                HORIZON
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {activeView === 'ar' && !imagePreview && (
                         <div style={{
                           position: 'absolute',
@@ -861,6 +1049,37 @@ export default function AIGardenDesigner() {
                           Upload a garden photo above to enable the overlay effect
                         </div>
                       )}
+                    </div>
+
+                    {/* Book This Design CTA */}
+                    <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={handleBookDesign}
+                        disabled={bookingLoading}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '11px 22px',
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          border: 'none',
+                          borderRadius: '10px',
+                          cursor: bookingLoading ? 'not-allowed' : 'pointer',
+                          boxShadow: '0 4px 14px rgba(16,185,129,0.3)',
+                          letterSpacing: '0.01em',
+                          transition: 'all 0.18s',
+                          opacity: bookingLoading ? 0.7 : 1,
+                        }}
+                        onMouseEnter={e => { if (!bookingLoading) { e.currentTarget.style.opacity = '0.88'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+                        onMouseLeave={e => { e.currentTarget.style.opacity = bookingLoading ? '0.7' : '1'; e.currentTarget.style.transform = 'none'; }}
+                      >
+                        <CalendarPlus size={15} />
+                        {bookingLoading ? 'Saving Design…' : 'Book This Design'}
+                      </button>
                     </div>
                   </div>
                 )}

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { useAuth } from '../context/AuthContext';
-import { CalendarPlus, CheckCircle2, Clock, CalendarCheck, AlertCircle, MapPin } from 'lucide-react';
+import { CalendarPlus, CheckCircle2, Clock, CalendarCheck, AlertCircle, MapPin, Sparkles } from 'lucide-react';
 
 const BookService = () => {
     const { authTokens } = useAuth();
+    const location = useLocation();
+    const incomingDesign = location.state || {};
+
     const [blackoutDates, setBlackoutDates] = useState([]);
     const [selectedDate, setSelectedDate] = useState(null);
     const [serviceType, setServiceType] = useState('maintenance');
@@ -52,6 +56,15 @@ const BookService = () => {
         };
         fetchDesigns();
     }, [authTokens]);
+
+    // Auto-select the design that was passed from the AI Designer
+    useEffect(() => {
+        if (!incomingDesign.designId || designs.length === 0) return;
+        const match = designs.find(
+            d => String(d.id) === String(incomingDesign.designId)
+        );
+        if (match) setSelectedDesignId(String(match.id));
+    }, [designs, incomingDesign.designId]);
 
     const handleLocate = () => {
         setLocating(true);
@@ -559,6 +572,39 @@ const BookService = () => {
                         {/* Attach a Saved 3D Design (Optional) */}
                         <div style={styles.formGroup}>
                             <label style={styles.label}>Attach a Saved 3D Design (Optional)</label>
+
+                            {/* Confirmation badge — shown when navigated from AI Designer */}
+                            {incomingDesign.designName && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '10px 14px',
+                                    background: '#F0FDF4',
+                                    border: '1.5px solid #BBF7D0',
+                                    borderRadius: '10px',
+                                    marginBottom: '10px',
+                                }}>
+                                    <Sparkles size={15} color="#10b981" style={{ flexShrink: 0 }} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>
+                                            Pre-filled from AI Designer
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#14532d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {incomingDesign.designName}
+                                            {incomingDesign.totalCost != null && (
+                                                <span style={{ color: '#6b7280', fontWeight: 500 }}>
+                                                    {' '}· ₱{Number(incomingDesign.totalCost).toLocaleString()}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {selectedDesignId && (
+                                        <CheckCircle2 size={16} color="#10b981" style={{ flexShrink: 0 }} />
+                                    )}
+                                </div>
+                            )}
+
                             {designs.length > 0 ? (
                                 <div style={styles.selectWrap}>
                                     <select

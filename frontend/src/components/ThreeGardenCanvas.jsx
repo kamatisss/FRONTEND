@@ -4,9 +4,13 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getInventoryItems } from '../services/api';
 
-export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgroundImageUrl, arMode = false }) {
+export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgroundImageUrl, arMode = false, arGrid = false, horizonY = 0.5, photoTone = null, readOnly = false }) {
   const canvasRef = useRef(null);
   const aiPlantsGroupRef = useRef(null);
+  const ambientLightRef = useRef(null);
+  const cameraRef = useRef(null);
+  const controlsRef = useRef(null);
+  const horizonYRef = useRef(horizonY);
   const [inventory, setInventory] = useState([]);
 
   useEffect(() => {
@@ -20,6 +24,49 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
       });
     return () => { isMounted = false; };
   }, []);
+
+  // Keep horizonYRef current so Effect 1's closure always reads the latest value
+  useEffect(() => { horizonYRef.current = horizonY; }, [horizonY]);
+
+  // Effect 3: Move the camera to match a new horizonY without reinitialising the scene
+  useEffect(() => {
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (!camera || !controls || !arMode) return;
+    const pad = 6;
+    const cw = Math.max(Number(lotWidth) || 10, 1);
+    const cl = Math.max(Number(lotLength) || 10, 1);
+    const gw = cw + pad;
+    const gl = cl + pad;
+    const camDist   = Math.max(gw, gl) * 1.1 + 6;
+    const camHeight = Math.max(gw, gl) * 0.6 + 4;
+    const cx = cw / 2;
+    const cz = cl / 2;
+    const t = 1.0 - horizonY; // high horizonY → horizon near bottom → elevated camera
+    camera.position.set(
+      cx,
+      camHeight * (0.1 + t * 0.6),
+      cz + camDist * (0.7 + horizonY * 0.25),
+    );
+    controls.update();
+  }, [horizonY, arMode, lotWidth, lotLength]);
+
+  // Effect 4: Tint ambient light to approximate the photo's color temperature
+  useEffect(() => {
+    const light = ambientLightRef.current;
+    if (!light) return;
+    if (arMode && photoTone) {
+      const { r, g, b } = photoTone;
+      const blend = 0.28; // gentle tint — mostly neutral, slight photo warmth
+      light.color.setRGB(
+        1.0 - blend + r * blend,
+        1.0 - blend + g * blend,
+        1.0 - blend + b * blend,
+      );
+    } else {
+      light.color.set(0xffffff);
+    }
+  }, [arMode, photoTone]);
 
   // Effect 1: Initialize vanilla Three.js scene environment
   useEffect(() => {
@@ -56,8 +103,14 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     if (arMode) {
-      // Low-angle perspective that approximates an outdoor photo horizon
-      camera.position.set(cx, camHeight * 0.42, cz + camDist * 0.88);
+      // Position derived from horizonY calibration (read via ref to avoid dep loop)
+      // horizonY near 0 → horizon at top of photo → low camera; near 1 → elevated camera
+      const t = 1.0 - horizonYRef.current;
+      camera.position.set(
+        cx,
+        camHeight * (0.1 + t * 0.6),
+        cz + camDist * (0.7 + horizonYRef.current * 0.25),
+      );
     } else {
       camera.position.set(cx, camHeight, cz + camDist);
     }
@@ -71,6 +124,7 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
 
     // 4. Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, arMode ? 0.9 : 0.7);
+    ambientLightRef.current = ambientLight; // exposed for Effect 4 colour tinting
     scene.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -121,6 +175,26 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
       scene.add(gridHelper);
     }
 
+    // AR spatial grid — subtle ground reference overlay in Photo Overlay mode
+    let arGridHelper = null;
+    if (arMode && arGrid) {
+      const gridSpan = Math.max(gw, gl);
+      const gridDivs = Math.round(gridSpan);
+      arGridHelper = new THREE.GridHelper(gridSpan, gridDivs, 0xffffff, 0xffffff);
+      // GridHelper has a material array [center-line mat, grid-line mat] — patch both
+      const mats = Array.isArray(arGridHelper.material)
+        ? arGridHelper.material
+        : [arGridHelper.material];
+      mats.forEach(m => {
+        m.transparent = true;
+        m.opacity = 0.3;
+        m.depthWrite = false;
+      });
+      arGridHelper.scale.set(gw / gridSpan, 1, gl / gridSpan);
+      arGridHelper.position.set(cx, 0.002, cz);
+      scene.add(arGridHelper);
+    }
+
     // 6. Empty group for AI plants
     const aiGroup = new THREE.Group();
     scene.add(aiGroup);
@@ -140,6 +214,9 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
       controls.enablePan = false;
     }
     controls.update();
+    // Store refs so Effect 3 and Effect 4 can update camera/light without reinit
+    cameraRef.current   = camera;
+    controlsRef.current = controls;
 
     // 8. Animation Loop
     let animationFrameId;
@@ -167,8 +244,13 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
       ground.geometry.dispose();
       groundMat.dispose();
       if (gridHelper) gridHelper.dispose();
+      if (arGridHelper) arGridHelper.dispose();
+      // Null out refs so Effects 3 & 4 don't touch disposed objects
+      cameraRef.current      = null;
+      controlsRef.current    = null;
+      ambientLightRef.current = null;
     };
-  }, [lotWidth, lotLength, arMode, backgroundImageUrl]);
+  }, [lotWidth, lotLength, arMode, backgroundImageUrl, arGrid]);
 
   // Effect 2: Place, position, rotate, and dispose AI plants when props change
   useEffect(() => {
@@ -286,6 +368,22 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
 
       if (placeholderMesh) aiGroup.add(placeholderMesh);
 
+      // Contact-shadow disc (fake AO) — grounding ring that appears in AR mode only
+      if (arMode) {
+        const shadowR =
+          (pId.includes('tree') || pId.includes('oak') || pId.includes('palm')) ? 0.8 :
+          (pId.includes('shrub') || pId.includes('fern') || pId.includes('boxwood') || pId.includes('bamboo') || pId.includes('banana')) ? 0.5 : 0.28;
+        const contactGeo = new THREE.CircleGeometry(shadowR, 14);
+        contactGeo.rotateX(-Math.PI / 2);
+        const contactMat = new THREE.MeshBasicMaterial({
+          color: 0x000000, transparent: true, opacity: 0.2, depthWrite: false,
+        });
+        const contactDisc = new THREE.Mesh(contactGeo, contactMat);
+        contactDisc.position.set(plant.x, 0.01, plant.z);
+        contactDisc.renderOrder = 1;
+        aiGroup.add(contactDisc);
+      }
+
       const match = inventory.find(item => {
         if (item.id.toString() === pId || item.id === parseInt(pId, 10)) return true;
         const itemName = item.name.toLowerCase();
@@ -366,7 +464,7 @@ export default function ThreeGardenCanvas({ plants, lotWidth, lotLength, backgro
         );
       }
     });
-  }, [plants, inventory]);
+  }, [plants, inventory, arMode]);
 
   return (
     <canvas
