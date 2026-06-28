@@ -19,17 +19,26 @@ const ManageUsers = () => {
         username: '',
         email: '',
         password: '',
-        role: 'customer' // staff or customer
+        role: 'CUSTOMER'
     });
 
     // Edit user role & activity states
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
-    const [selectedUserRole, setSelectedUserRole] = useState('customer');
+    const [selectedUserRole, setSelectedUserRole] = useState('CUSTOMER');
     const [activityLogs, setActivityLogs] = useState([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
     const [logsError, setLogsError] = useState(null);
     const [savingRole, setSavingRole] = useState(false);
+    const [toasts, setToasts] = useState([]);
+    
+    const showToast = (msg, type = 'success') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, msg, type }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 4000);
+    };
 
     const fetchUsers = async () => {
         try {
@@ -66,12 +75,10 @@ const ManageUsers = () => {
 
     const handleOpenEditModal = async (userObj) => {
         setSelectedUser(userObj);
-        let currentRole = 'customer';
-        if (userObj.is_superuser) {
-            currentRole = 'admin';
-        } else if (userObj.is_staff) {
-            currentRole = 'staff';
-        }
+        let currentRole = userObj.role || (userObj.is_superuser ? 'SUPER_ADMIN' : userObj.is_staff ? 'OFFICE_ADMIN' : 'CUSTOMER');
+        if (currentRole === 'Admin') currentRole = 'SUPER_ADMIN';
+        if (currentRole === 'Staff') currentRole = 'OFFICE_ADMIN';
+        if (currentRole === 'Customer') currentRole = 'CUSTOMER';
         setSelectedUserRole(currentRole);
         setEditModalOpen(true);
         setLoadingLogs(true);
@@ -92,27 +99,30 @@ const ManageUsers = () => {
         if (!selectedUser) return;
         setSavingRole(true);
         try {
-            const res = await updateUser(selectedUser.id, { input_role: selectedUserRole });
-            
-            // Map API response to user list role
-            const mappedRole = res.is_superuser ? 'Admin' : (res.is_staff ? 'Staff' : 'Customer');
+            const res = await updateUser(selectedUser.id, { role: selectedUserRole });
             
             setUsers(users.map(u => u.id === selectedUser.id ? { 
                 ...u, 
                 is_staff: res.is_staff, 
                 is_superuser: res.is_superuser, 
-                role: mappedRole 
+                role: res.role 
             } : u));
             
             setSelectedUser({
                 ...selectedUser,
                 is_staff: res.is_staff,
                 is_superuser: res.is_superuser,
-                role: mappedRole
+                role: res.role
             });
-            alert("User role updated successfully.");
+            const prettyRoleName = {
+                'SUPER_ADMIN': 'System Administrator',
+                'OFFICE_ADMIN': 'Office Staff',
+                'FIELD_CREW': 'Field Crew',
+                'CUSTOMER': 'Customer'
+            }[res.role] || res.role;
+            showToast(`Role successfully updated to ${prettyRoleName}`);
         } catch (err) {
-            alert(err.message || "Failed to update user role.");
+            showToast(err.message || "Failed to update user role.", "error");
         } finally {
             setSavingRole(false);
         }
@@ -131,7 +141,7 @@ const ManageUsers = () => {
             username: '',
             email: '',
             password: '',
-            role: 'customer'
+            role: 'CUSTOMER'
         });
         setFormError(null);
         setModalOpen(true);
@@ -164,7 +174,9 @@ const ManageUsers = () => {
                 last_name: lastName,
                 email: formData.email,
                 password: formData.password,
-                input_role: formData.role
+                role: formData.role,
+                input_role: formData.role.toLowerCase() === 'super_admin' ? 'admin' : (formData.role.toLowerCase() === 'customer' ? 'customer' : 'staff'),
+                input_staff_role: formData.role
             });
             
             // Reload user list and close modal
@@ -284,8 +296,10 @@ const ManageUsers = () => {
                                     onChange={handleInputChange}
                                     style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#1e293b', backgroundColor: '#ffffff', cursor: 'pointer' }}
                                 >
-                                    <option value="customer">Customer</option>
-                                    <option value="staff">Staff</option>
+                                    <option value="CUSTOMER">Customer (Read-Only Portal)</option>
+                                    <option value="FIELD_CREW">Field Crew (Mobile Execution)</option>
+                                    <option value="OFFICE_ADMIN">Office Staff (Operations & Dispatch)</option>
+                                    <option value="SUPER_ADMIN">System Administrator (Full Access)</option>
                                 </select>
                             </div>
 
@@ -420,20 +434,27 @@ const ManageUsers = () => {
                                 </thead>
                                 <tbody>
                                     {filteredUsers.map((item) => {
-                                        const role = item.role || (item.is_superuser ? 'Admin' : item.is_staff ? 'Staff' : 'Customer');
+                                        const rawRole = item.role || (item.is_superuser ? 'SUPER_ADMIN' : item.is_staff ? 'OFFICE_ADMIN' : 'CUSTOMER');
+                                        let role = rawRole;
+                                        if (role === 'Admin') role = 'SUPER_ADMIN';
+                                        if (role === 'Staff') role = 'OFFICE_ADMIN';
+                                        if (role === 'Customer') role = 'CUSTOMER';
                                         
                                         // Role badge styling
                                         let roleBg = '#F3F4F6';
                                         let roleColor = '#374151';
-                                        if (role === 'Admin') {
+                                        if (role === 'SUPER_ADMIN') {
                                             roleBg = '#F3E8FF';
                                             roleColor = '#6B21A8';
-                                        } else if (role === 'Staff') {
-                                            roleBg = '#D1FAE5';
-                                            roleColor = '#065F46'; // matches Paid Online badge colors
-                                        } else if (role === 'Customer') {
+                                        } else if (role === 'OFFICE_ADMIN') {
+                                            roleBg = '#DBEAFE';
+                                            roleColor = '#1E40AF';
+                                        } else if (role === 'FIELD_CREW') {
+                                            roleBg = '#FFEDD5';
+                                            roleColor = '#9A3412';
+                                        } else if (role === 'CUSTOMER') {
                                             roleBg = '#FEF3C7';
-                                            roleColor = '#92400E'; // matches COD badge colors
+                                            roleColor = '#92400E';
                                         }
 
                                         return (
@@ -454,7 +475,7 @@ const ManageUsers = () => {
                                                         display: 'inline-block', padding: '4px 12px', borderRadius: 999,
                                                         background: roleBg, color: roleColor,
                                                         fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em',
-                                                    }}>{role}</span>
+                                                    }}>{role.replace('_', ' ')}</span>
                                                 </td>
                                                 <td style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9' }}>
                                                     {item.is_active ? (
@@ -594,9 +615,10 @@ const ManageUsers = () => {
                                         onChange={e => setSelectedUserRole(e.target.value)}
                                         style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#1e293b', backgroundColor: '#ffffff', cursor: 'pointer', marginBottom: '16px' }}
                                     >
-                                        <option value="customer">Customer (Default client permissions)</option>
-                                        <option value="staff">Staff (Operational & design reviews)</option>
-                                        <option value="admin">Administrator (Full root privileges)</option>
+                                        <option value="SUPER_ADMIN">System Administrator (Full Access)</option>
+                                        <option value="OFFICE_ADMIN">Office Staff (Operations & Dispatch)</option>
+                                        <option value="FIELD_CREW">Field Crew (Mobile Execution)</option>
+                                        <option value="CUSTOMER">Customer (Read-Only Portal)</option>
                                     </select>
                                     
                                     <button
@@ -739,6 +761,24 @@ const ManageUsers = () => {
                     </div>
                 </div>
             )}
+            {/* Toast Notifications */}
+            <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {toasts.map(t => (
+                    <div key={t.id} style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '12px 16px', borderRadius: '8px',
+                        background: t.type === 'success' ? '#ECFDF5' : '#FEF2F2',
+                        color: t.type === 'success' ? '#065F46' : '#991B1B',
+                        border: `1px solid ${t.type === 'success' ? '#A7F3D0' : '#FCA5A5'}`,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        fontSize: '14px', fontWeight: '600', minWidth: '250px',
+                        transition: 'all 0.2s ease-in-out'
+                    }}>
+                        <CheckCircle size={16} />
+                        <span>{t.msg}</span>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

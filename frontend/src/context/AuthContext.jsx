@@ -115,10 +115,29 @@ export const AuthProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [authTokens, loading]);
 
+  const loginUserSilent = async (username, password) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/token/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await response.json();
+    if (response.status === 200) {
+      setAuthTokens(data);
+      const decodedUser = jwtDecode(data.access);
+      setUser(decodedUser);
+      localStorage.setItem('authTokens', JSON.stringify(data));
+      return decodedUser;
+    } else {
+      throw new Error(data.detail || 'Invalid credentials. Please try again.');
+    }
+  };
+
   const contextData = {
     user,
     authTokens,
     loginUser,
+    loginUserSilent,
     logoutUser,
   };
 

@@ -1,25 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Calendar, Check, Clock, MapPin, AlertCircle, AlertTriangle } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Calendar, Check, Clock, MapPin, AlertTriangle, Star, CalendarPlus, CheckCircle2, CalendarCheck, Sparkles, X, AlertCircle } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import ServiceRatingModal from './ServiceRatingModal';
 
-const getActiveStep = (status) => {
+const getActiveStep = (status, hasDesign) => {
     switch (status) {
-        case 'Pending': return 0;
-        case 'Confirmed': return 1;
-        case 'In Progress': return 2;
-        case 'Completed': return 3;
-        default: return -1;
+        case 'Pending':
+            return hasDesign ? 3 : 1;
+        case 'Preparing':
+            return 4;
+        case 'Installing':
+            return 5;
+        case 'Finished':
+        case 'Completed':
+            return 6;
+        default:
+            return -1;
     }
 };
 
-const BookingMilestoneTracker = ({ status }) => {
-    const activeStep = getActiveStep(status);
+const BookingMilestoneTracker = ({ status, hasDesign }) => {
+    const activeStep = getActiveStep(status, hasDesign);
     
     const steps = [
         { label: 'Request Submitted', desc: 'Booking request sent' },
         { label: 'AI Layout Created', desc: 'AI design generated' },
         { label: 'Staff Review', desc: 'Reviewing layout details' },
-        { label: 'Finalized Studio Plan', desc: 'Ready in 3D Studio' }
+        { label: 'Finalized Studio Plan', desc: 'Ready in 3D Studio' },
+        { label: 'Dispatched', desc: 'Crew prepared & routed' },
+        { label: 'Work in Progress', desc: 'Installation active on site' },
+        { label: 'Completed', desc: 'Project signed off' }
     ];
 
     if (status === 'Cancelled') {
@@ -51,28 +64,34 @@ const BookingMilestoneTracker = ({ status }) => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', width: '100%' }}>
                 
                 {/* Background progress line */}
-                <div style={{
-                    position: 'absolute',
-                    top: '20px',
-                    left: '6%',
-                    right: '6%',
-                    height: '4px',
-                    background: '#EDE8DF',
-                    zIndex: 0,
-                }} />
+                <div 
+                    className="stepper-line"
+                    style={{
+                        position: 'absolute',
+                        top: '20px',
+                        left: '7%',
+                        right: '7%',
+                        height: '4px',
+                        background: '#EDE8DF',
+                        zIndex: 0,
+                    }} 
+                />
 
                 {/* Active progress line fill */}
                 {activeStep > 0 && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '20px',
-                        left: '6%',
-                        width: `${(activeStep / (steps.length - 1)) * 88}%`,
-                        height: '4px',
-                        background: 'linear-gradient(135deg, #2D4A2D, #4A7A3A)',
-                        zIndex: 1,
-                        transition: 'width 0.4s ease-in-out',
-                    }} />
+                    <div 
+                        className="stepper-line-fill"
+                        style={{
+                            position: 'absolute',
+                            top: '20px',
+                            left: '7%',
+                            width: `${(activeStep / (steps.length - 1)) * 86}%`,
+                            height: '4px',
+                            background: 'linear-gradient(135deg, #2D4A2D, #4A7A3A)',
+                            zIndex: 1,
+                            transition: 'width 0.4s ease-in-out',
+                        }} 
+                    />
                 )}
 
                 {/* Steps */}
@@ -120,14 +139,14 @@ const BookingMilestoneTracker = ({ status }) => {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            width: '24%',
+                            width: `${100 / steps.length}%`,
                             position: 'relative',
                             zIndex: 2,
                         }}>
                             {/* Circle Node */}
                             <div 
                                 style={nodeStyle}
-                                className={isActive ? "stepper-active-node" : ""}
+                                className={isActive ? "stepper-node stepper-active-node" : "stepper-node"}
                             >
                                 {isCompleted ? (
                                     <Check size={18} strokeWidth={3} />
@@ -139,8 +158,8 @@ const BookingMilestoneTracker = ({ status }) => {
                             </div>
 
                             {/* Labels */}
-                            <div style={{ textAlign: 'center', marginTop: '12px' }}>
-                                <div style={{
+                            <div className="stepper-labels-container" style={{ textAlign: 'center', marginTop: '12px' }}>
+                                <div className="stepper-label" style={{
                                     fontSize: '0.8rem',
                                     fontWeight: isActive || isCompleted ? 700 : 500,
                                     color: isActive ? '#4A7A3A' : isCompleted ? '#1A2E1A' : '#9A9080',
@@ -149,7 +168,7 @@ const BookingMilestoneTracker = ({ status }) => {
                                 }}>
                                     {step.label}
                                 </div>
-                                <div style={{
+                                <div className="stepper-desc" style={{
                                     fontSize: '0.7rem',
                                     color: '#9A9080',
                                     fontWeight: 500,
@@ -165,14 +184,458 @@ const BookingMilestoneTracker = ({ status }) => {
     );
 };
 
+/* ─── NewBookingModal Component ─── */
+function NewBookingModal({ isOpen, onClose, onSuccess }) {
+    const { authTokens } = useAuth();
+    const [blackoutDates, setBlackoutDates] = useState([]);
+    const [selectedDate, setSelectedDate] = useState(null);
+    const [serviceType, setServiceType] = useState('maintenance');
+    const [contactNumber, setContactNumber] = useState('');
+    const [serviceAddress, setServiceAddress] = useState('');
+    const [preferredTime, setPreferredTime] = useState('anytime');
+    const [notes, setNotes] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
+    const [locating, setLocating] = useState(false);
+    const [locatingError, setLocatingError] = useState('');
+    const [designs, setDesigns] = useState([]);
+    const [selectedDesignId, setSelectedDesignId] = useState('');
+    const location = useLocation();
+
+    // Auto-select design and set service type if user came from AI designer page
+    useEffect(() => {
+        if (isOpen && location.state?.designId) {
+            setSelectedDesignId(String(location.state.designId));
+            setServiceType('consultation');
+        }
+    }, [isOpen, location.state]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const fetchBlackoutDates = async () => {
+            try {
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/blackout-dates/`);
+                const data = await res.json();
+                setBlackoutDates(data.map(b => new Date(b.date + 'T00:00:00')));
+            } catch (error) {
+                console.error('Error fetching blackout dates:', error);
+            }
+        };
+        fetchBlackoutDates();
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen || !authTokens) return;
+        const fetchDesigns = async () => {
+            try {
+                const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/designs/`, {
+                    headers: {
+                        'Authorization': `Bearer ${authTokens.access}`
+                    }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setDesigns(data);
+                }
+            } catch (error) {
+                console.error('Error fetching designs:', error);
+            }
+        };
+        fetchDesigns();
+    }, [isOpen, authTokens]);
+
+    const handleLocate = () => {
+        setLocating(true);
+        setLocatingError("");
+
+        if (!navigator.geolocation) {
+            setLocatingError("Could not get location. Geolocation is not supported by your device browser. Please type your address.");
+            setLocating(false);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'User-Agent': 'GardenStudio-App/1.0'
+                        }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.display_name) {
+                            setServiceAddress(data.display_name);
+                        } else {
+                            setLocatingError("Could not get location. Please type your address.");
+                        }
+                    } else {
+                        setLocatingError("Could not get location. Please type your address.");
+                    }
+                } catch (err) {
+                    console.error("Reverse geocoding failed:", err);
+                    setLocatingError("Could not get location. Please type your address.");
+                } finally {
+                    setLocating(false);
+                }
+            },
+            (err) => {
+                let errorDetails = "";
+                if (err.code === err.PERMISSION_DENIED) {
+                    errorDetails = "Location permission denied. Please allow GPS access.";
+                } else if (err.code === err.POSITION_UNAVAILABLE) {
+                    errorDetails = "Location unavailable. Ensure GPS/Wi-Fi is on.";
+                } else if (err.code === err.TIMEOUT) {
+                    errorDetails = "Location request timed out. Please try again.";
+                }
+                const finalMsg = errorDetails
+                    ? `Could not get location. ${errorDetails} Please type your address.`
+                    : "Could not get location. Please type your address.";
+                setLocatingError(finalMsg);
+                setLocating(false);
+                setTimeout(() => {
+                    setLocatingError("");
+                }, 5000);
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedDate) {
+            setMessage('Please select a valid date.');
+            return;
+        }
+
+        setLoading(true);
+        setMessage('');
+
+        const offset = selectedDate.getTimezoneOffset();
+        const localDate = new Date(selectedDate.getTime() - (offset*60*1000));
+        const formattedDate = localDate.toISOString().split('T')[0];
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/bookings/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authTokens.access}`
+                },
+                body: JSON.stringify({
+                    service_type: serviceType,
+                    scheduled_date: formattedDate,
+                    contact_number: contactNumber,
+                    preferred_time: preferredTime,
+                    service_address: serviceAddress,
+                    notes: notes,
+                    design: selectedDesignId ? parseInt(selectedDesignId, 10) : null
+                })
+            });
+
+            if (res.ok) {
+                const newBooking = await res.json();
+                onSuccess(newBooking);
+                // Reset form
+                setSelectedDate(null);
+                setContactNumber('');
+                setServiceAddress('');
+                setPreferredTime('anytime');
+                setNotes('');
+                setSelectedDesignId('');
+            } else {
+                const data = await res.json();
+                setMessage('Error: ' + JSON.stringify(data));
+            }
+        } catch (error) {
+            setMessage('Error submitting booking.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+    const isError = message.includes('Error') || message.includes('Please select');
+
+    return (
+        <div 
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fade-in"
+            style={{ background: 'rgba(2,6,23,0.72)', backdropFilter: 'blur(8px)' }}
+            onClick={onClose}
+        >
+            <div 
+                className="bg-white rounded-[24px] border border-slate-200 overflow-hidden w-full max-w-[900px] shadow-2xl relative flex flex-col md:flex-row max-h-[90vh]"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Close Button */}
+                <button 
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer bg-transparent border-none z-10"
+                >
+                    <X size={20} />
+                </button>
+
+                {/* Left Column: Form */}
+                <div className="w-full md:w-[60%] p-6 md:p-8 overflow-y-auto max-h-[85vh] md:max-h-[90vh]">
+                    <h3 className="text-[22px] font-black text-slate-900 flex items-center gap-2 mb-1">
+                        <CalendarPlus style={{ color: '#4A7A3A' }} size={24} />
+                        Book a Service
+                    </h3>
+                    <p className="text-slate-500 text-xs font-semibold mb-6">
+                        Select a date, service type, and let us know how we can help.
+                    </p>
+
+                    {message && (
+                        <div style={{
+                            padding: '12px 14px',
+                            marginBottom: '1.5rem',
+                            borderRadius: '10px',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            background: isError ? '#FEF2F2' : '#F0FDF4',
+                            border: isError ? '1px solid #FECACA' : '1px solid #BBF7D0',
+                            color: isError ? '#991B1B' : '#166534',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                        }}>
+                            {isError
+                                ? <AlertCircle style={{ flexShrink: 0, marginTop: '2px' }} size={16} />
+                                : <CheckCircle2 style={{ flexShrink: 0, marginTop: '2px' }} size={16} />
+                            }
+                            <span>{message}</span>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        {/* Service Type */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Service Type</label>
+                            <div className="relative">
+                                <select
+                                    value={serviceType}
+                                    onChange={(e) => setServiceType(e.target.value)}
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[12px] text-sm text-slate-800 font-semibold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none appearance-none cursor-pointer"
+                                >
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="consultation">Consultation</option>
+                                    <option value="hardscaping">Full Hardscaping</option>
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Contact Number */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Contact Number</label>
+                            <input
+                                type="tel"
+                                value={contactNumber}
+                                onChange={(e) => setContactNumber(e.target.value)}
+                                placeholder="e.g. 09171234567"
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[12px] text-sm text-slate-800 font-medium focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none"
+                                required
+                            />
+                        </div>
+
+                        {/* Scheduled Date + Preferred Time */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Scheduled Date</label>
+                                <div className="relative custom-datepicker-wrapper">
+                                    <DatePicker
+                                        selected={selectedDate}
+                                        onChange={(date) => setSelectedDate(date)}
+                                        excludeDates={blackoutDates}
+                                        minDate={new Date()}
+                                        placeholderText="Select a date"
+                                        className="book-date-input"
+                                        required
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                        <CalendarPlus size={16} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Preferred Time</label>
+                                <div className="relative">
+                                    <select
+                                        value={preferredTime}
+                                        onChange={(e) => setPreferredTime(e.target.value)}
+                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[12px] text-sm text-slate-800 font-semibold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none appearance-none cursor-pointer"
+                                    >
+                                        <option value="anytime">Anytime</option>
+                                        <option value="morning">Morning (8AM – 12PM)</option>
+                                        <option value="afternoon">Afternoon (1PM – 5PM)</option>
+                                    </select>
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Service Address */}
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex justify-between items-center">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Service Address</label>
+                                <button
+                                    type="button"
+                                    onClick={handleLocate}
+                                    disabled={locating}
+                                    className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-transparent hover:bg-emerald-50 px-2 py-0.5 rounded transition-all uppercase tracking-wider cursor-pointer border-none"
+                                >
+                                    <MapPin size={10} className={locating ? "animate-spin" : ""} />
+                                    {locating ? 'Locating...' : 'Use GPS'}
+                                </button>
+                            </div>
+                            <textarea
+                                value={serviceAddress}
+                                onChange={(e) => {
+                                    setServiceAddress(e.target.value);
+                                    setLocatingError("");
+                                }}
+                                rows={2}
+                                placeholder="Full address where the service will be performed"
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[12px] text-sm text-slate-800 font-medium focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none resize-none"
+                                required
+                            />
+                            {locatingError && (
+                                <p className="text-[10px] text-red-500 font-bold mt-0.5">{locatingError}</p>
+                            )}
+                        </div>
+
+                        {/* Notes */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Project Details / Notes</label>
+                            <textarea
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                rows={2}
+                                placeholder="Tell us more about what you need..."
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[12px] text-sm text-slate-800 font-medium focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none resize-none"
+                            />
+                        </div>
+
+                        {/* Attach Design */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Attach a Saved 3D Design (Optional)</label>
+                            {designs.length > 0 ? (
+                                <div className="relative">
+                                    <select
+                                        value={selectedDesignId}
+                                        onChange={(e) => setSelectedDesignId(e.target.value)}
+                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-[12px] text-sm text-slate-800 font-semibold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none appearance-none cursor-pointer"
+                                    >
+                                        <option value="">-- Select a saved design --</option>
+                                        {designs.map((design) => (
+                                            <option key={design.id} value={design.id}>
+                                                {design.name || `Design #${design.id}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-[11px] text-slate-500 m-0 p-3 bg-slate-50 rounded-[12px] border border-slate-100 leading-normal">
+                                    No saved designs found.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Submit */}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-sm font-bold rounded-[12px] border-none cursor-pointer shadow-md transition-all mt-2"
+                        >
+                            {loading ? 'Submitting...' : 'Confirm Booking'}
+                        </button>
+                    </form>
+                </div>
+
+                {/* Right Column: What to Expect */}
+                <div className="w-full md:w-[40%] bg-emerald-50/50 p-6 md:p-8 flex flex-col justify-center border-t md:border-t-0 md:border-l border-emerald-100 overflow-y-auto max-h-[85vh] md:max-h-[90vh]">
+                    <h4 className="text-[16px] font-black text-emerald-800 mb-6 tracking-normal">What Happens Next?</h4>
+
+                    <div className="flex gap-4 mb-6">
+                        <div className="shrink-0 w-9 h-9 rounded-full bg-emerald-100 border-[2px] border-white flex items-center justify-center text-emerald-600 font-bold shadow-sm">
+                            <CheckCircle2 size={16} />
+                        </div>
+                        <div>
+                            <div className="font-bold text-emerald-800 text-xs mb-0.5">1. Request Submitted</div>
+                            <div className="text-[11px] text-emerald-700/80 leading-relaxed font-medium">
+                                Your booking details are securely sent to our management team for initial review.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-4 mb-6">
+                        <div className="shrink-0 w-9 h-9 rounded-full bg-emerald-100 border-[2px] border-white flex items-center justify-center text-emerald-600 font-bold shadow-sm">
+                            <Clock size={16} />
+                        </div>
+                        <div>
+                            <div className="font-bold text-emerald-800 text-xs mb-0.5">2. Expert Review</div>
+                            <div className="text-[11px] text-emerald-700/80 leading-relaxed font-medium">
+                                Our gardening experts will review your timeline and assess resource availability.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-4">
+                        <div className="shrink-0 w-9 h-9 rounded-full bg-emerald-100 border-[2px] border-white flex items-center justify-center text-emerald-600 font-bold shadow-sm">
+                            <CalendarCheck size={16} />
+                        </div>
+                        <div>
+                            <div className="font-bold text-emerald-800 text-xs mb-0.5">3. Booking Confirmed</div>
+                            <div className="text-[11px] text-emerald-700/80 leading-relaxed font-medium">
+                                You'll receive an email confirmation with full details of your upcoming service.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+}
+
 const MyBookings = () => {
     const { authTokens } = useAuth();
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [bookings,         setBookings]         = useState([]);
+    const [loading,          setLoading]          = useState(true);
+    const [reviewedIds,      setReviewedIds]      = useState(new Set());
+    const [ratingModal,      setRatingModal]      = useState(null); // bookingId or null
+    const [reviewSuccessIds, setReviewSuccessIds] = useState(new Set());
+    const [showNewBookingModal, setShowNewBookingModal] = useState(false);
+    const location = useLocation();
+
+    // Automatically open the booking modal if user is redirected from AI Designer page
+    useEffect(() => {
+        if (location.state?.autoOpenModal) {
+            setShowNewBookingModal(true);
+        }
+    }, [location.state]);
+
+    const handleNewBookingSuccess = (newBooking) => {
+        setBookings(prev => [newBooking, ...prev]);
+        setShowNewBookingModal(false);
+    };
+
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
     const fetchMyBookings = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/bookings/`, {
+            const res = await fetch(`${apiBase}/bookings/`, {
                 headers: { 'Authorization': `Bearer ${authTokens.access}` }
             });
             const data = await res.json();
@@ -184,8 +647,21 @@ const MyBookings = () => {
         }
     };
 
+    const fetchMyReviews = async () => {
+        try {
+            const res = await fetch(`${apiBase}/reviews/`, {
+                headers: { 'Authorization': `Bearer ${authTokens.access}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setReviewedIds(new Set(data.map(r => r.booking)));
+            }
+        } catch { /* non-critical */ }
+    };
+
     useEffect(() => {
         fetchMyBookings();
+        fetchMyReviews();
     }, []);
 
     const handleCancelBooking = async (bookingId) => {
@@ -220,10 +696,13 @@ const MyBookings = () => {
             case 'Pending':
                 return { ...base, background: '#FDFAF6', color: '#C9883A', borderColor: '#E8E1D4' };
             case 'Confirmed':
+            case 'Preparing':
                 return { ...base, background: '#EAF0E4', color: '#4A7A3A', borderColor: '#8FAF7E' };
             case 'In Progress':
+            case 'Installing':
                 return { ...base, background: '#F0EBE0', color: '#8A7E6E', borderColor: '#D4CAB8' };
             case 'Completed':
+            case 'Finished':
                 return { ...base, background: '#EAF0E4', color: '#4A7A3A', borderColor: '#8FAF7E' };
             case 'Cancelled':
                 return { ...base, background: '#FEF2F2', color: '#991B1B', borderColor: '#FECACA' };
@@ -283,29 +762,81 @@ const MyBookings = () => {
     };
 
     return (
+        <>
         <div style={s.page}>
             <style>{`
                 @keyframes stepperPulse {
-                    0% {
-                        box-shadow: 0 0 0 0 rgba(74, 122, 58, 0.4);
-                    }
-                    70% {
-                        box-shadow: 0 0 0 8px rgba(74, 122, 58, 0);
-                    }
-                    100% {
-                        box-shadow: 0 0 0 0 rgba(74, 122, 58, 0);
-                    }
+                    0% { box-shadow: 0 0 0 0 rgba(74, 122, 58, 0.4); }
+                    70% { box-shadow: 0 0 0 10px rgba(74, 122, 58, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(74, 122, 58, 0); }
                 }
                 .stepper-active-node {
                     animation: stepperPulse 2s infinite;
+                }
+                @media (max-width: 768px) {
+                    .stepper-desc {
+                        display: none !important;
+                    }
+                    .stepper-label {
+                        font-size: 0.65rem !important;
+                        margin-top: 4px !important;
+                    }
+                    .stepper-node {
+                        width: 32px !important;
+                        height: 32px !important;
+                    }
+                    .stepper-line, .stepper-line-fill {
+                        top: 16px !important;
+                    }
+                }
+                @media (max-width: 480px) {
+                    .stepper-label {
+                        font-size: 0.55rem !important;
+                        font-weight: 800 !important;
+                    }
+                    .stepper-node {
+                        width: 24px !important;
+                        height: 24px !important;
+                    }
+                    .stepper-node span {
+                        font-size: 0.7rem !important;
+                    }
+                    .stepper-line, .stepper-line-fill {
+                        top: 12px !important;
+                        height: 3px !important;
+                    }
                 }
             `}</style>
             <div style={s.card}>
 
                 {/* Card Header */}
-                <div style={s.header}>
-                    <Calendar size={28} style={{ color: '#4A7A3A' }} />
-                    <h2 style={s.title}>My Bookings</h2>
+                <div style={{ ...s.header, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <Calendar size={28} style={{ color: '#4A7A3A' }} />
+                        <h2 style={s.title}>My Bookings</h2>
+                    </div>
+                    <button
+                        onClick={() => setShowNewBookingModal(true)}
+                        style={{
+                            padding: '10px 20px',
+                            background: '#4A7A3A',
+                            color: '#FDFAF6',
+                            border: 'none',
+                            borderRadius: '12px',
+                            fontSize: '0.85rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(74, 122, 58, 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#3D6130'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#4A7A3A'; }}
+                    >
+                        <CalendarPlus size={16} /> New Service
+                    </button>
                 </div>
 
                 {loading ? (
@@ -355,12 +886,12 @@ const MyBookings = () => {
                                             {b.service_type}
                                         </h3>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                                         <span style={getStatusBadge(b.status)}>
                                             {b.status}
                                         </span>
                                         {b.status.toLowerCase() === 'pending' && (
-                                            <button 
+                                            <button
                                                 onClick={() => handleCancelBooking(b.id)}
                                                 style={{
                                                     fontSize: '0.8rem', fontWeight: 700, color: '#EF4444',
@@ -372,6 +903,32 @@ const MyBookings = () => {
                                             >
                                                 Cancel Booking
                                             </button>
+                                        )}
+                                        {(b.status === 'Finished' || b.status === 'Completed') && (
+                                            reviewSuccessIds.has(b.id) || reviewedIds.has(b.id) ? (
+                                                <span style={{
+                                                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                                    fontSize: '0.75rem', fontWeight: 700, color: '#059669',
+                                                    background: '#ecfdf5', padding: '4px 10px',
+                                                    borderRadius: '9999px', border: '1px solid #a7f3d0',
+                                                }}>
+                                                    <Star size={11} fill="#059669" color="#059669" /> Reviewed
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setRatingModal(b.id)}
+                                                    style={{
+                                                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                                        fontSize: '0.78rem', fontWeight: 700, color: '#fff',
+                                                        background: '#10b981', border: 'none', padding: '5px 12px',
+                                                        borderRadius: '9999px', cursor: 'pointer', transition: 'background .15s',
+                                                    }}
+                                                    onMouseEnter={e => e.currentTarget.style.background = '#059669'}
+                                                    onMouseLeave={e => e.currentTarget.style.background = '#10b981'}
+                                                >
+                                                    <Star size={12} fill="white" color="white" /> Rate Our Service
+                                                </button>
+                                            )
                                         )}
                                     </div>
                                 </div>
@@ -402,7 +959,7 @@ const MyBookings = () => {
                                 </div>
 
                                 {/* Milestone Tracker */}
-                                <BookingMilestoneTracker status={b.status} />
+                                <BookingMilestoneTracker status={b.status} hasDesign={!!(b.design || b.design_details)} />
 
                                 {/* Notes section if present */}
                                 {b.notes && (
@@ -439,7 +996,28 @@ const MyBookings = () => {
                 )}
 
             </div>
+
+            {/* New Service Booking Modal */}
+            {showNewBookingModal && (
+                <NewBookingModal
+                    isOpen={showNewBookingModal}
+                    onClose={() => setShowNewBookingModal(false)}
+                    onSuccess={handleNewBookingSuccess}
+                />
+            )}
         </div>
+
+        {ratingModal !== null && (
+            <ServiceRatingModal
+                bookingId={ratingModal}
+                onClose={() => setRatingModal(null)}
+                onSuccess={() => {
+                    setReviewSuccessIds(prev => new Set([...prev, ratingModal]));
+                    setRatingModal(null);
+                }}
+            />
+        )}
+        </>
     );
 };
 

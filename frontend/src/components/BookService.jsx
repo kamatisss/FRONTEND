@@ -63,7 +63,10 @@ const BookService = () => {
         const match = designs.find(
             d => String(d.id) === String(incomingDesign.designId)
         );
-        if (match) setSelectedDesignId(String(match.id));
+        if (match) {
+            setSelectedDesignId(String(match.id));
+            setServiceType('consultation');
+        }
     }, [designs, incomingDesign.designId]);
 
     const handleLocate = () => {

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle, Printer, ArrowLeft, Leaf } from 'lucide-react';
+import { CheckCircle, Leaf, ShoppingBag, ClipboardList } from 'lucide-react';
 
 export default function OrderSuccess() {
   const navigate = useNavigate();
@@ -8,6 +8,7 @@ export default function OrderSuccess() {
   const orderId    = searchParams.get('order_id');
   const orderTotal = searchParams.get('total');
   const orderName  = searchParams.get('name');
+  const paymentMethod = searchParams.get('method'); // 'cod' or other
   const now        = new Date();
 
   useEffect(() => {
@@ -17,7 +18,6 @@ export default function OrderSuccess() {
 
   return (
     <>
-      {/* ── Print styles: hide UI chrome when user saves PDF ── */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -34,21 +34,26 @@ export default function OrderSuccess() {
             <div className="flex justify-center mb-4">
               <CheckCircle size={64} strokeWidth={1.5} className="drop-shadow-lg" />
             </div>
-            <h1 className="text-3xl font-black mb-1">Payment Successful!</h1>
-            <p className="text-emerald-100 text-sm">Your garden items have been confirmed.</p>
+            <h1 className="text-3xl font-black mb-1">Order Confirmed!</h1>
+            <p className="text-emerald-100 text-sm">Your garden order has been placed and is awaiting processing.</p>
           </div>
 
           {/* ── Receipt Body ── */}
           <div className="px-8 py-6">
 
             {/* Brand */}
-            <div className="flex items-center justify-center gap-2 mb-6">
+            <div className="flex items-center justify-center gap-2 mb-5">
               <Leaf size={20} className="text-emerald-600" />
               <span className="text-lg font-extrabold text-slate-800 tracking-tight">Garden Studio</span>
             </div>
 
+            {/* Section label: Order Details */}
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
+              Order Details
+            </div>
+
             {/* Order Meta */}
-            <div className="border border-dashed border-slate-200 rounded-2xl p-5 mb-6 space-y-3">
+            <div className="border border-dashed border-slate-200 rounded-2xl p-5 mb-6 space-y-3 bg-slate-50/50">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500 font-medium">Order Number</span>
                 <span className="font-bold text-slate-900">#{orderId ?? '—'}</span>
@@ -71,16 +76,25 @@ export default function OrderSuccess() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500 font-medium">Payment Method</span>
-                <span className="font-bold text-slate-900">Stripe (Card)</span>
+                <span className="font-bold text-slate-900">
+                  {paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Stripe (Card)'}
+                </span>
               </div>
             </div>
 
-            {/* Total */}
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 flex justify-between items-center mb-6">
-              <span className="text-emerald-800 font-extrabold text-sm uppercase tracking-wider">Amount Paid</span>
-              <span className="text-2xl font-black text-emerald-600">
-                ₱{orderTotal ? Number(orderTotal).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '—'}
-              </span>
+            {/* Total Payable */}
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 flex flex-col gap-1.5 mb-6">
+              <div className="flex justify-between items-center">
+                <span className="text-emerald-800 font-extrabold text-sm uppercase tracking-wider">Total Payable</span>
+                <span className="text-2xl font-black text-emerald-600">
+                  ₱{orderTotal ? Number(orderTotal).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '—'}
+                </span>
+              </div>
+              {paymentMethod === 'cod' && (
+                <div className="text-[10px] text-emerald-800/80 font-semibold border-t border-emerald-250 pt-1.5 mt-0.5 leading-normal">
+                  * Please prepare the exact amount to be paid to the delivery driver upon arrival.
+                </div>
+              )}
             </div>
 
             {/* Note */}
@@ -91,18 +105,18 @@ export default function OrderSuccess() {
             {/* ── Actions ── */}
             <div className="no-print flex flex-col gap-3">
               <button
-                onClick={() => window.print()}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 hover:bg-slate-700 text-white rounded-2xl font-bold transition-all shadow-md active:scale-95"
+                onClick={() => navigate('/my-orders')}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold transition-all shadow-md active:scale-95 border-none cursor-pointer"
               >
-                <Printer size={18} />
-                Print / Save as PDF
+                <ClipboardList size={18} />
+                View Orders
               </button>
               <button
-                onClick={() => navigate('/studio')}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-2xl font-bold transition-all active:scale-95"
+                onClick={() => navigate('/shop')}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-2xl font-bold transition-all active:scale-95 cursor-pointer"
               >
-                <ArrowLeft size={18} />
-                Back to Garden Studio
+                <ShoppingBag size={18} />
+                Back to Shop
               </button>
             </div>
           </div>

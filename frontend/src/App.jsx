@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import { AuthProvider } from "./context/AuthContext";
 import { DesignProvider } from "./context/DesignContext";
 import GardenDesigner from "./components/GardenDesigner";
@@ -24,14 +25,29 @@ import StaffAttendance from "./components/StaffAttendance";
 import AdminAttendance from "./components/AdminAttendance";
 import UserDashboard from "./components/UserDashboard";
 import AdminSettings from "./components/AdminSettings";
+import { CartProvider } from "./context/CartContext";
+import Shop from "./components/Shop";
 import "./App.css";
+
+function AIDesignerRoute() {
+  const { user } = useAuth();
+  if (user) {
+    return (
+      <DashboardLayout>
+        <AIGardenDesigner />
+      </DashboardLayout>
+    );
+  }
+  return <AIGardenDesigner />;
+}
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <DesignProvider>
-          <div className="app-root">
+        <CartProvider>
+          <DesignProvider>
+            <div className="app-root">
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<Login />} />
@@ -71,13 +87,16 @@ function App() {
                 }
               />
 
-              {/* AI Designer */}
+              {/* AI Designer — public, guest-accessible */}
+              <Route path="/ai-designer" element={<AIDesignerRoute />} />
+
+              {/* Shop (User) */}
               <Route
-                path="/ai-designer"
+                path="/shop"
                 element={
-                  <RoleProtectedRoute allowedRoles={['user', 'admin', 'staff']}>
+                  <RoleProtectedRoute allowedRoles={['user']}>
                     <DashboardLayout>
-                      <AIGardenDesigner />
+                      <Shop />
                     </DashboardLayout>
                   </RoleProtectedRoute>
                 }
@@ -230,8 +249,9 @@ function App() {
               {/* Landing Page */}
               <Route path="/" element={<LandingPage />} />
             </Routes>
-          </div>
-        </DesignProvider>
+            </div>
+          </DesignProvider>
+        </CartProvider>
       </AuthProvider>
     </Router>
   );

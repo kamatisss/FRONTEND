@@ -331,7 +331,7 @@ const StaffAttendance = () => {
       });
       if (bookingsRes.ok) {
         const bookingsData = await bookingsRes.json();
-        setBookings(bookingsData.filter((b) => b.status === "Confirmed" || b.status === "Pending"));
+        setBookings(bookingsData.filter((b) => !["Finished", "Cancelled"].includes(b.status)));
       }
 
       const logsData = await getAttendanceLogs();

@@ -351,6 +351,14 @@ const TopNavbar = () => {
         {!isAdminOrStaff && (
           <div className="flex items-center gap-6 ml-auto mr-8">
             <NavLink 
+              to="/user-dashboard" 
+              className={({ isActive }) => 
+                `text-sm ${isActive ? 'font-semibold text-emerald-600' : 'font-medium text-slate-600'} hover:text-emerald-600 transition-colors duration-150 no-underline`
+              }
+            >
+              Dashboard
+            </NavLink>
+            <NavLink 
               to="/ai-designer" 
               className={({ isActive }) => 
                 `text-sm ${isActive ? 'font-semibold text-emerald-600' : 'font-medium text-slate-600'} hover:text-emerald-600 transition-colors duration-150 no-underline`
@@ -359,7 +367,7 @@ const TopNavbar = () => {
               Design with AI
             </NavLink>
             <NavLink 
-              to="/book-service" 
+              to="/shop" 
               className={({ isActive }) => 
                 `text-sm ${isActive ? 'font-semibold text-emerald-600' : 'font-medium text-slate-600'} hover:text-emerald-600 transition-colors duration-150 no-underline`
               }

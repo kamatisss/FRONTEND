@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Sparkles, ArrowLeft, Check, Compass, ShieldAlert, Upload, X, CalendarPlus } from 'lucide-react';
+import { Sparkles, ArrowLeft, Check, Compass, ShieldAlert, Upload, X, CalendarPlus, Info } from 'lucide-react';
 import ThreeGardenCanvas from './ThreeGardenCanvas';
 import { useDesign } from '../context/DesignContext';
 import { getInventoryItems } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { saveGuestDesign, loadGuestDesign, clearGuestDesign } from '../services/guestSession';
+import GuestAuthModal from './GuestAuthModal';
+
+const LOADING_PHASES = [
+  'Analyzing your garden space…',
+  'Composing Symmetrical layout…',
+  'Composing Minimalist layout…',
+  'Composing Lush / Organic layout…',
+  'Balancing flora and budget…',
+  'Finalizing your garden options…',
+];
 
 const getPlantEmoji = (name = '') => {
   const n = name.toLowerCase();
@@ -65,6 +77,7 @@ const BotanicalSVG = () => (
 export default function AIGardenDesigner() {
   const navigate = useNavigate();
   const { dispatch } = useDesign();
+  const { user } = useAuth();
 
   const [budget, setBudget] = useState(5000);
   const [inventory, setInventory] = useState([]);
@@ -97,6 +110,84 @@ export default function AIGardenDesigner() {
   const [horizonY, setHorizonY] = useState(0.5);
   const [calibrationMode, setCalibrationMode] = useState(false);
   const [photoTone, setPhotoTone] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
+  const [expandedBreakdowns, setExpandedBreakdowns] = useState({});
+  const [loadingPhase, setLoadingPhase] = useState(0);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [budgetWarning, setBudgetWarning] = useState('');
+
+  // Restore guest session on mount (guests only)
+  useEffect(() => {
+    if (!user) {
+      const saved = loadGuestDesign();
+      if (saved?.layouts?.length) {
+        setGeneratedLayouts(saved.layouts);
+        setActiveLayout(saved.layouts[0]);
+        if (saved.budget) setBudget(saved.budget);
+        if (saved.lotWidth) setLotWidth(saved.lotWidth);
+        if (saved.lotLength) setLotLength(saved.lotLength);
+      }
+    }
+  }, []);
+
+  const toggleBreakdown = (index) => {
+    setExpandedBreakdowns(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  // Space requirement validation
+  useEffect(() => {
+    if (preferredPlants.length === 0 || inventory.length === 0) {
+      setToastMessage('');
+      return;
+    }
+    const lotSize = Number(lotWidth) * Number(lotLength);
+    if (isNaN(lotSize) || lotSize <= 0) return;
+
+    const totalSpace = preferredPlants.reduce((sum, id) => {
+      const plant = inventory.find(p => String(p.id) === String(id));
+      if (!plant) return sum;
+      const size = Number(plant.real_world_size) || 1.0;
+      return sum + (size * size);
+    }, 0);
+
+    if (totalSpace > lotSize) {
+      setToastMessage(
+        `Selected plants require at least ${totalSpace.toFixed(1)}m² of space, but your lot is only ${lotSize.toFixed(1)}m². The composition may be overcrowded.`
+      );
+    } else {
+      setToastMessage('');
+    }
+  }, [preferredPlants, lotWidth, lotLength, inventory]);
+
+  // Pre-flight budget guard: warn if 45% plant allocation is too low for the lot
+  useEffect(() => {
+    const plantBudget = Number(budget) * 0.45;
+    const lotArea = Number(lotWidth) * Number(lotLength);
+    if (!budget || !lotWidth || !lotLength || isNaN(lotArea) || lotArea <= 0) return;
+    const cheapest = inventory.length > 0
+      ? Math.min(...inventory.map(p => Number(p.unit_price)))
+      : 200;
+    const minPlants = Math.max(5, Math.ceil(lotArea / 15));
+    if (plantBudget < minPlants * cheapest) {
+      setBudgetWarning(
+        'Budget may be too tight for an area of this size. Consider increasing your budget or choosing low-cost flora.'
+      );
+    } else {
+      setBudgetWarning('');
+    }
+  }, [budget, lotWidth, lotLength, inventory]);
+
+  useEffect(() => {
+    if (!loading) return;
+    setLoadingPhase(0);
+    const id = setInterval(() => {
+      setLoadingPhase(prev => (prev + 1) % LOADING_PHASES.length);
+    }, 2200);
+    return () => clearInterval(id);
+  }, [loading]);
 
   const handleTogglePlant = (id) => {
     setPreferredPlants(prev =>
@@ -148,6 +239,10 @@ export default function AIGardenDesigner() {
           ),
         }));
         setGeneratedLayouts(validated);
+        if (response.data.budget_warning) setBudgetWarning(response.data.budget_warning);
+        if (!user) {
+          saveGuestDesign({ layouts: validated, budget, lotWidth, lotLength });
+        }
       } else {
         throw new Error("Invalid response format");
       }
@@ -193,6 +288,7 @@ export default function AIGardenDesigner() {
   };
 
   const handleBookDesign = async () => {
+    if (!user) { setShowAuthModal(true); return; }
     setBookingLoading(true);
     const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
     const storedAuth = localStorage.getItem('authTokens');
@@ -210,26 +306,29 @@ export default function AIGardenDesigner() {
       const designPayload = {
         name: activeLayout.design_name,
         placed_items: activeLayout.plants,
+        plant_breakdown: activeLayout.plant_breakdown || [],
         dimensions: { width: Number(lotWidth), length: Number(lotLength), horizonY },
         total_cost: activeLayout.total_cost,
         reference_image_url: referenceImageUrl,
         status: 'draft',
       };
       const designRes = await axios.post(`${API_BASE_URL}/designs/`, designPayload, { headers: authHeader });
-      navigate('/book-service', {
+      navigate('/my-bookings', {
         state: {
           designId: designRes.data.id,
           designName: activeLayout.design_name,
           totalCost: activeLayout.total_cost,
+          autoOpenModal: true,
         },
       });
     } catch (err) {
       console.error('Failed to save design:', err);
-      navigate('/book-service', {
+      navigate('/my-bookings', {
         state: {
           designId: null,
           designName: activeLayout.design_name,
           totalCost: activeLayout.total_cost,
+          autoOpenModal: true,
         },
       });
     } finally {
@@ -664,9 +763,108 @@ export default function AIGardenDesigner() {
         .back-btn:hover { background: #EAF0E4 !important; color: #2D4A2D !important; }
         .select-btn:hover { opacity: 0.88; }
         .fade-in { animation: fadeUp 0.4s ease both; }
+        
+        .tooltip-container {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          cursor: pointer;
+        }
+        .tooltip-text {
+          visibility: hidden;
+          width: 250px;
+          background-color: #1A2E1A;
+          color: #F7F3EC;
+          text-align: left;
+          border-radius: 12px;
+          padding: 10px 14px;
+          position: absolute;
+          z-index: 999;
+          bottom: 130%;
+          right: -10px;
+          opacity: 0;
+          transition: opacity 0.25s ease, transform 0.25s ease;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+          font-size: 0.76rem;
+          line-height: 1.4;
+          font-weight: 500;
+          pointer-events: none;
+          border: 1px solid rgba(143,175,126,0.2);
+        }
+        .tooltip-text::after {
+          content: "";
+          position: absolute;
+          top: 100%;
+          right: 14px;
+          border-width: 6px;
+          border-style: solid;
+          border-color: #1A2E1A transparent transparent transparent;
+        }
+        .tooltip-container:hover .tooltip-text {
+          visibility: visible;
+          opacity: 1;
+          transform: translateY(-4px);
+        }
       `}</style>
 
       <div className="w-full min-h-screen flex flex-col items-center justify-start bg-[#f6f6f4] py-6 px-4 md:px-8" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        {/* Space Warning Toast */}
+        {toastMessage && (
+          <div style={{
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            background: '#FEF2F2',
+            border: '1.5px solid #FECACA',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            boxShadow: '0 10px 25px -5px rgba(220, 38, 38, 0.1), 0 8px 10px -6px rgba(220, 38, 38, 0.1)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            maxWidth: '400px',
+            animation: 'fadeUp 0.3s ease-out forwards',
+          }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              background: '#FEE2E2',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <ShieldAlert size={20} color="#DC2626" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#991B1B' }}>Lot Space Warning</div>
+              <div style={{ fontSize: '0.78rem', color: '#B91C1C', marginTop: '2px', lineHeight: 1.4 }}>{toastMessage}</div>
+            </div>
+            <button
+              onClick={() => setToastMessage('')}
+              style={{
+                border: 'none',
+                background: 'none',
+                color: '#991B1B',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: 0.7,
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         <div className="w-full max-w-6xl flex flex-col gap-6">
 
           {/* Hero Banner */}
@@ -718,6 +916,15 @@ export default function AIGardenDesigner() {
                         style={{ ...styles.input, paddingLeft: '26px' }}
                         required
                       />
+                    </div>
+                    {budgetWarning && (
+                      <div style={{ marginTop: '6px', display: 'flex', alignItems: 'flex-start', gap: '6px', padding: '8px 10px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px' }}>
+                        <ShieldAlert size={13} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: '0.7rem', color: '#92400e', fontWeight: 600, lineHeight: 1.35 }}>{budgetWarning}</span>
+                      </div>
+                    )}
+                    <div style={{ marginTop: '6px', fontSize: '0.68rem', color: '#8A7E6E', fontWeight: 600 }}>
+                      Plant allocation: ₱{Math.round(Number(budget) * 0.45).toLocaleString()} (45% of budget)
                     </div>
                   </div>
                   <div style={styles.inputGroup}>
@@ -832,17 +1039,36 @@ export default function AIGardenDesigner() {
               </form>
             )}
 
-            {/* Loading */}
+            {/* Loading – skeleton cards with progressive phase text */}
             {loading && (
-              <div style={styles.loadingWrap}>
-                <div style={styles.spinner} />
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 800, fontSize: '1.3rem', color: '#1A2E1A', marginBottom: '8px' }}>
-                    Composing your garden…
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '1.5rem' }}>
+                  <div style={styles.spinner} />
+                  <div>
+                    <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 800, fontSize: '1.15rem', color: '#1A2E1A' }}>
+                      Composing your garden…
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#8A7E6E', marginTop: '3px', minHeight: '1.1em', transition: 'opacity 0.4s' }}>
+                      {LOADING_PHASES[loadingPhase]}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.83rem', color: '#8A7E6E' }}>
-                    Balancing flora, budget, and spatial harmony
-                  </div>
+                </div>
+                <div style={styles.layoutsGrid}>
+                  {[0.7, 0.8, 0.9].map((op, i) => (
+                    <div key={i} style={{ ...styles.layoutCard, opacity: op }}>
+                      <div style={{ ...styles.layoutCardTop, background: 'linear-gradient(135deg, #1A2E1A 0%, #2D4A2D 100%)' }}>
+                        <div style={{ height: '10px', width: '60px', background: 'rgba(255,255,255,0.13)', borderRadius: '8px', marginBottom: '12px' }} />
+                        <div style={{ height: '18px', width: '75%', background: 'rgba(255,255,255,0.10)', borderRadius: '8px', marginBottom: '10px' }} />
+                        <div style={{ height: '28px', width: '45%', background: 'rgba(201,136,58,0.22)', borderRadius: '8px' }} />
+                      </div>
+                      <div style={styles.layoutBody}>
+                        {[1, 0.8, 0.65, 0.5, 0.35].map((lineOp, j) => (
+                          <div key={j} style={{ height: '12px', background: '#EDE8DF', borderRadius: '6px', marginBottom: '10px', opacity: lineOp }} />
+                        ))}
+                        <div style={{ height: '36px', background: '#EDE8DF', borderRadius: '10px', marginTop: '1.25rem', opacity: 0.5 }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -861,11 +1087,32 @@ export default function AIGardenDesigner() {
                   </button>
                 </div>
 
+                {budgetWarning && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 16px', background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '12px', marginBottom: '1.25rem' }}>
+                    <ShieldAlert size={18} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#92400e' }}>Budget Note</div>
+                      <div style={{ fontSize: '0.78rem', color: '#78350f', marginTop: '2px', lineHeight: 1.4 }}>{budgetWarning}</div>
+                    </div>
+                  </div>
+                )}
+
                 <div style={styles.layoutsGrid}>
                   {generatedLayouts.map((design, index) => (
                     <div key={index} className="layout-card" style={styles.layoutCard}>
-                      <div style={styles.layoutCardTop}>
-                        <span style={styles.layoutBadge}>Option {index + 1}</span>
+                      <div style={{ ...styles.layoutCardTop, position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <span style={{ ...styles.layoutBadge, marginBottom: 0 }}>Option {index + 1}</span>
+                          {design.reasoning && (
+                            <div className="tooltip-container">
+                              <Info size={16} className="text-[#8FAF7E] hover:text-[#C9883A] transition-colors" />
+                              <div className="tooltip-text">
+                                <div className="font-bold mb-1 pb-1 border-b border-white/10 text-[#8FAF7E] text-[0.8rem]">AI Design Reasoning</div>
+                                {design.reasoning}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <h3 style={styles.layoutName}>{design.design_name}</h3>
                         <div style={styles.layoutCost}>₱{design.total_cost.toLocaleString()}</div>
                       </div>
@@ -892,6 +1139,70 @@ export default function AIGardenDesigner() {
                             </div>
                           )}
                         </div>
+                        {/* Cost Breakdown — always visible */}
+                        {design.cost_breakdown && (
+                          <div style={{ marginTop: '1rem', borderTop: '1px solid #EDE8DF', paddingTop: '1rem' }}>
+                            <div style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9A9080', marginBottom: '8px' }}>
+                              Cost Breakdown
+                            </div>
+                            {[
+                              { label: 'Plants & Materials', pct: '45%', amount: design.cost_breakdown.plants, color: '#4A7A3A', bg: '#F0F7ED' },
+                              { label: 'Labor & Site Mobilization', pct: '35%', amount: design.cost_breakdown.labor, color: '#8A7E6E', bg: '#F5F0E8' },
+                              { label: 'Service Fee & Design Markup', pct: '20%', amount: design.cost_breakdown.service, color: '#C9883A', bg: '#FDF7EE' },
+                            ].map((row, ri) => (
+                              <div key={ri} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 8px', borderRadius: '8px', background: row.bg, marginBottom: '4px' }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#3A3A3A' }}>
+                                  {row.label} <span style={{ color: '#9A9080', fontWeight: 500 }}>({row.pct})</span>
+                                </span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: row.color, whiteSpace: 'nowrap' }}>
+                                  ₱{Number(row.amount).toLocaleString()}
+                                </span>
+                              </div>
+                            ))}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 8px', borderRadius: '8px', background: '#1A2E1A', marginTop: '6px' }}>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#F7F3EC', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                Total Estimated Cost
+                              </span>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#C9883A' }}>
+                                ₱{Number(design.cost_breakdown.total).toLocaleString()}
+                              </span>
+                            </div>
+
+                            {/* Plant BOM — still togglable */}
+                            <button
+                              type="button"
+                              onClick={() => toggleBreakdown(index)}
+                              style={{ background: 'transparent', border: 'none', color: '#4A7A3A', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: '8px 0 0', outline: 'none' }}
+                            >
+                              {expandedBreakdowns[index] ? 'Hide Plant List ▲' : 'View Plant List ▼'}
+                            </button>
+                            {expandedBreakdowns[index] && (
+                              <div style={{ marginTop: '8px', overflowX: 'auto' }} className="fade-in">
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'left' }}>
+                                  <thead>
+                                    <tr style={{ borderBottom: '1.5px solid #EDE8DF' }}>
+                                      <th style={{ padding: '6px 4px', color: '#9A9080', fontWeight: 700 }}>Plant</th>
+                                      <th style={{ padding: '6px 4px', color: '#9A9080', fontWeight: 700, textAlign: 'center' }}>Qty</th>
+                                      <th style={{ padding: '6px 4px', color: '#9A9080', fontWeight: 700, textAlign: 'right' }}>Unit</th>
+                                      <th style={{ padding: '6px 4px', color: '#9A9080', fontWeight: 700, textAlign: 'right' }}>Subtotal</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {(design.plant_breakdown || []).map((item, itemIdx) => (
+                                      <tr key={itemIdx} style={{ borderBottom: '1px solid #F0EBE0' }}>
+                                        <td style={{ padding: '8px 4px', fontWeight: 600, color: '#2D2D2D' }}>{getPlantEmoji(item.name)} {item.name}</td>
+                                        <td style={{ padding: '8px 4px', textAlign: 'center', color: '#4A7A3A', fontWeight: 700 }}>{item.quantity}</td>
+                                        <td style={{ padding: '8px 4px', textAlign: 'right', color: '#8A7E6E' }}>₱{Number(item.unit_price).toLocaleString()}</td>
+                                        <td style={{ padding: '8px 4px', textAlign: 'right', fontWeight: 700, color: '#1A2E1A' }}>₱{Number(item.subtotal).toLocaleString()}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         <button
                           onClick={() => handleSelectLayout(design)}
                           className="select-btn"
@@ -1077,9 +1388,9 @@ export default function AIGardenDesigner() {
                         onMouseEnter={e => { if (!bookingLoading) { e.currentTarget.style.opacity = '0.88'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
                         onMouseLeave={e => { e.currentTarget.style.opacity = bookingLoading ? '0.7' : '1'; e.currentTarget.style.transform = 'none'; }}
                       >
-                        <CalendarPlus size={15} />
-                        {bookingLoading ? 'Saving Design…' : 'Book This Design'}
-                      </button>
+                         <CalendarPlus size={15} />
+                         {bookingLoading ? 'Saving Design…' : 'Book Final Site Inspection & Consultation'}
+                       </button>
                     </div>
                   </div>
                 )}
@@ -1089,6 +1400,13 @@ export default function AIGardenDesigner() {
 
         </div>
       </div>
+
+      {showAuthModal && (
+        <GuestAuthModal
+          onClose={() => setShowAuthModal(false)}
+          onAuthSuccess={() => { setShowAuthModal(false); handleBookDesign(); }}
+        />
+      )}
     </>
   );
 }

@@ -23,24 +23,33 @@ import {
 } from 'lucide-react';
 
 // Booking Step helper for milestone stepper
-const getActiveStep = (status) => {
+const getActiveStep = (status, hasDesign) => {
     switch (status) {
-        case 'Pending': return 0;
-        case 'Confirmed': return 1;
-        case 'In Progress': return 2;
-        case 'Completed': return 3;
-        default: return -1;
+        case 'Pending':
+            return hasDesign ? 3 : 1;
+        case 'Preparing':
+            return 4;
+        case 'Installing':
+            return 5;
+        case 'Finished':
+        case 'Completed':
+            return 6;
+        default:
+            return -1;
     }
 };
 
-const BookingMilestoneTracker = ({ status }) => {
-    const activeStep = getActiveStep(status);
+const BookingMilestoneTracker = ({ status, hasDesign }) => {
+    const activeStep = getActiveStep(status, hasDesign);
     
     const steps = [
-        { label: 'Request Submitted', desc: 'Pending review' },
-        { label: 'Approved & Scheduled', desc: 'Confirmed' },
-        { label: 'Service In Progress', desc: 'Staff on-site' },
-        { label: 'Completed', desc: 'Finished & verified' }
+        { label: 'Request Submitted', desc: 'Booking request sent' },
+        { label: 'AI Layout Created', desc: 'AI design generated' },
+        { label: 'Staff Review', desc: 'Reviewing layout details' },
+        { label: 'Finalized Studio Plan', desc: 'Ready in 3D Studio' },
+        { label: 'Dispatched', desc: 'Crew prepared & routed' },
+        { label: 'Work in Progress', desc: 'Installation active on site' },
+        { label: 'Completed', desc: 'Project signed off' }
     ];
 
     if (status === 'Cancelled') {
@@ -66,31 +75,80 @@ const BookingMilestoneTracker = ({ status }) => {
 
     return (
         <div style={{ marginTop: '16px', padding: '0 4px' }}>
+            <style>{`
+                @keyframes stepperPulse {
+                    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+                    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+                }
+                .stepper-active-node {
+                    animation: stepperPulse 2s infinite;
+                }
+                @media (max-width: 768px) {
+                    .stepper-desc {
+                        display: none !important;
+                    }
+                    .stepper-label {
+                        font-size: 0.65rem !important;
+                        margin-top: 4px !important;
+                    }
+                    .stepper-node {
+                        width: 24px !important;
+                        height: 24px !important;
+                    }
+                    .stepper-line, .stepper-line-fill {
+                        top: 12px !important;
+                    }
+                }
+                @media (max-width: 480px) {
+                    .stepper-label {
+                        font-size: 0.55rem !important;
+                        font-weight: 800 !important;
+                    }
+                    .stepper-node {
+                        width: 20px !important;
+                        height: 20px !important;
+                    }
+                    .stepper-node span {
+                        font-size: 0.65rem !important;
+                    }
+                    .stepper-line, .stepper-line-fill {
+                        top: 10px !important;
+                        height: 2px !important;
+                    }
+                }
+            `}</style>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', width: '100%' }}>
                 
                 {/* Background line */}
-                <div style={{
-                    position: 'absolute',
-                    top: '16px',
-                    left: '6%',
-                    right: '6%',
-                    height: '3px',
-                    background: '#E5E7EB',
-                    zIndex: 0,
-                }} />
+                <div 
+                    className="stepper-line"
+                    style={{
+                        position: 'absolute',
+                        top: '16px',
+                        left: '7%',
+                        right: '7%',
+                        height: '3px',
+                        background: '#E5E7EB',
+                        zIndex: 0,
+                    }} 
+                />
 
                 {/* Active progress line fill */}
                 {activeStep > 0 && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '16px',
-                        left: '6%',
-                        width: `${(activeStep / (steps.length - 1)) * 88}%`,
-                        height: '3px',
-                        background: '#10B981',
-                        zIndex: 1,
-                        transition: 'width 0.4s ease-in-out',
-                    }} />
+                    <div 
+                        className="stepper-line-fill"
+                        style={{
+                            position: 'absolute',
+                            top: '16px',
+                            left: '7%',
+                            width: `${(activeStep / (steps.length - 1)) * 86}%`,
+                            height: '3px',
+                            background: '#10B981',
+                            zIndex: 1,
+                            transition: 'width 0.4s ease-in-out',
+                        }} 
+                    />
                 )}
 
                 {/* Steps */}
@@ -138,12 +196,15 @@ const BookingMilestoneTracker = ({ status }) => {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            width: '24%',
+                            width: `${100 / steps.length}%`,
                             position: 'relative',
                             zIndex: 2,
                         }}>
                             {/* Circle Node */}
-                            <div style={nodeStyle}>
+                            <div 
+                                style={nodeStyle}
+                                className={isActive ? "stepper-node stepper-active-node" : "stepper-node"}
+                            >
                                 {isCompleted ? (
                                     <Check size={14} strokeWidth={3} />
                                 ) : isActive ? (
@@ -154,8 +215,8 @@ const BookingMilestoneTracker = ({ status }) => {
                             </div>
 
                             {/* Labels */}
-                            <div style={{ textAlign: 'center', marginTop: '8px' }}>
-                                <div style={{
+                            <div className="stepper-labels-container" style={{ textAlign: 'center', marginTop: '8px' }}>
+                                <div className="stepper-label" style={{
                                     fontSize: '11px',
                                     fontWeight: isActive || isCompleted ? 700 : 500,
                                     color: isActive ? '#059669' : isCompleted ? '#1F2937' : '#6B7280',
@@ -163,6 +224,13 @@ const BookingMilestoneTracker = ({ status }) => {
                                     marginBottom: '2px',
                                 }}>
                                     {step.label}
+                                </div>
+                                <div className="stepper-desc" style={{
+                                    fontSize: '9px',
+                                    color: '#9CA3AF',
+                                    fontWeight: 500,
+                                }}>
+                                    {step.desc}
                                 </div>
                             </div>
                         </div>
@@ -262,14 +330,17 @@ const UserDashboard = () => {
             case 'Pending':
                 return { ...base, background: '#FEF3C7', color: '#92400E' };
             case 'Confirmed':
+            case 'Preparing':
             case 'Paid':
                 return { ...base, background: '#D1FAE5', color: '#065F46' };
             case 'In Progress':
+            case 'Installing':
             case 'Shipped':
                 return { ...base, background: '#DBEAFE', color: '#1E40AF' };
             case 'Out for Delivery':
                 return { ...base, background: '#E0F2FE', color: '#0369A1' };
             case 'Delivered':
+            case 'Finished':
                 return { ...base, background: '#D1FAE5', color: '#065F46' };
             case 'Cancelled':
                 return { ...base, background: '#FEE2E2', color: '#B91C1C' };
@@ -459,7 +530,7 @@ const UserDashboard = () => {
                                         <span style={getStatusStyle(activeBooking.status)}>{activeBooking.status}</span>
                                     </div>
                                     <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#64748b' }}>Scheduled on: <strong>{new Date(activeBooking.scheduled_date).toLocaleDateString()}</strong></p>
-                                    <BookingMilestoneTracker status={activeBooking.status} />
+                                    <BookingMilestoneTracker status={activeBooking.status} hasDesign={!!(activeBooking.design || activeBooking.design_details)} />
                                 </div>
                             )}
 
